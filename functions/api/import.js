@@ -4,7 +4,36 @@ const json = (data, status = 200) =>
     headers: { "content-type": "application/json; charset=utf-8" },
   });
 
-const nowIso = () => new Date().toISOString();
+const upsertSql = `
+INSERT INTO leads (
+  id, company_name, category, city, address,
+  phone_primary, phones_all, email_primary, emails_all,
+  website_primary, instagram, rating, reviews_count,
+  lead_score, priority, status, next_followup_at, notes,
+  source, source_url, source_id, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(source_url) DO UPDATE SET
+  company_name = excluded.company_name,
+  category = excluded.category,
+  city = excluded.city,
+  address = excluded.address,
+  phone_primary = excluded.phone_primary,
+  phones_all = excluded.phones_all,
+  email_primary = excluded.email_primary,
+  emails_all = excluded.emails_all,
+  website_primary = excluded.website_primary,
+  instagram = excluded.instagram,
+  rating = excluded.rating,
+  reviews_count = excluded.reviews_count,
+  lead_score = excluded.lead_score,
+  priority = excluded.priority,
+  status = excluded.status,
+  next_followup_at = excluded.next_followup_at,
+  notes = excluded.notes,
+  source = excluded.source,
+  source_id = excluded.source_id,
+  updated_at = excluded.updated_at
+`;
 
 export async function onRequestPost({ request, env }) {
   const url = new URL(request.url);
@@ -14,76 +43,25 @@ export async function onRequestPost({ request, env }) {
   const payload = await request.json();
   if (!Array.isArray(payload)) return json({ error: "Expected array" }, 400);
 
-  let inserted = 0;
-  let updated = 0;
+  let inserted = 0, updated = 0, skipped = 0;
+  const batch = [];
+  const ts = new Date().toISOString();
 
   for (const r of payload) {
     const company_name = (r.company_name || r.name || r.title || "").trim();
-    
     const category = ((r.category || r.Category || r.cat || "").trim() || forcedCategory || "").trim();
     const city = ((r.city || r.City || "").trim() || forcedCity || "").trim();
-    
-    const source_url = (r.source_url || "").trim() || null;
+    const source_url = (r.source_url || "").trim();
 
-    if (!company_name || !category || !city) continue;
-
-    const ts = nowIso();
-
-    let existing = null;
-    if (source_url) {
-      existing = await env.DB.prepare("SELECT id FROM leads WHERE source_url = ?")
-        .bind(source_url).first();
+    if (!company_name || !category || !city || !source_url) { 
+      skipped++; 
+      continue; 
     }
 
-    if (existing?.id) {
-      await env.DB.prepare(`
-        UPDATE leads SET
-          company_name = COALESCE(?, company_name),
-          category = COALESCE(?, category),
-          city = COALESCE(?, city),
-          address = COALESCE(?, address),
-          phone_primary = COALESCE(?, phone_primary),
-          phones_all = COALESCE(?, phones_all),
-          email_primary = COALESCE(?, email_primary),
-          emails_all = COALESCE(?, emails_all),
-          website_primary = COALESCE(?, website_primary),
-          instagram = COALESCE(?, instagram),
-          rating = COALESCE(?, rating),
-          reviews_count = COALESCE(?, reviews_count),
-          lead_score = COALESCE(?, lead_score),
-          priority = COALESCE(?, priority),
-          notes = COALESCE(?, notes),
-          updated_at = ?
-        WHERE id = ?
-      `).bind(
-        company_name, category, city,
-        r.address ?? null,
-        r.phone_primary ?? null,
-        r.phones_all ?? null,
-        r.email_primary ?? null,
-        r.emails_all ?? null,
-        r.website_primary ?? null,
-        r.instagram ?? null,
-        r.rating ?? null,
-        r.reviews_count ?? null,
-        r.lead_score ?? null,
-        r.priority ?? null,
-        r.notes ?? null,
-        ts,
-        existing.id
-      ).run();
-      updated++;
-    } else {
-      const id = crypto.randomUUID();
-      await env.DB.prepare(`
-        INSERT INTO leads (
-          id, company_name, category, city, address,
-          phone_primary, phones_all, email_primary, emails_all,
-          website_primary, instagram, rating, reviews_count,
-          lead_score, priority, status, next_followup_at, notes,
-          source, source_url, source_id, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).bind(
+    const id = crypto.randomUUID();
+
+    batch.push(
+      env.DB.prepare(upsertSql).bind(
         id, company_name, category, city,
         r.address ?? null,
         r.phone_primary ?? null,
@@ -103,10 +81,14 @@ export async function onRequestPost({ request, env }) {
         source_url,
         r.source_id ?? null,
         ts, ts
-      ).run();
-      inserted++;
+      )
+    );
+
+    if (batch.length >= 100) {
+      await env.DB.batch(batch.splice(0, batch.length));
     }
   }
 
-  return json({ ok: true, inserted, updated });
+  if (batch.length) await env.DB.batch(batch);
+  return json({ ok: true, inserted, updated, skipped });
 }
