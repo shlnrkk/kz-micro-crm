@@ -1,35 +1,36 @@
 <!doctype html>
 <html>
-<head><meta charset="utf-8"><title>Import</title></head>
+<head>
+  <meta charset="utf-8">
+  <title>Import</title>
+</head>
 <body>
   <h2>Import leads CSV</h2>
   <input type="file" id="file" accept=".csv" />
   <button id="btn">Import</button>
   <pre id="out"></pre>
 
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
     const out = document.getElementById("out");
     const log = (m) => out.textContent += m + "\n";
 
-    // ВАЖНО: это простой парсер.
-    // Если ваш CSV разделён точкой с запятой или содержит запятые в кавычках — скажите, сделаю robust.
-    function parseCSV(text) {
-      const lines = text.split(/\r?\n/).filter(l => l.trim().length);
-      const headers = lines[0].split(",").map(s => s.trim());
-      return lines.slice(1).map(line => {
-        const cols = line.split(",");
-        const obj = {};
-        headers.forEach((h, i) => obj[h] = (cols[i] ?? "").trim());
-        return obj;
-      });
-    }
-
     document.getElementById("btn").onclick = async () => {
       const f = document.getElementById("file").files[0];
       if (!f) return alert("Choose CSV");
-      const text = await f.text();
 
-      const rows = parseCSV(text);
+      log("Parsing...");
+      const parsed = await new Promise((resolve, reject) => {
+        Papa.parse(f, {
+          header: true,
+          skipEmptyLines: true,
+          dynamicTyping: false,
+          complete: resolve,
+          error: reject
+        });
+      });
+
+      const rows = parsed.data;
       log("Rows: " + rows.length);
 
       const resp = await fetch("/api/import", {
