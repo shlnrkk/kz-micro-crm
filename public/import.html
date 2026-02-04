@@ -39,15 +39,28 @@
       else if (fname.includes("business")) cat = "business_center";
       else if (fname.includes("auto")) cat = "auto_service";
 
-      const resp = await fetch(`/api/import?category=${encodeURIComponent(cat)}&city=${encodeURIComponent("Астана")}`, {
-        method: "POST",
-        headers: {"content-type":"application/json"},
-        body: JSON.stringify(rows)
-      });
+      const chunkSize = 200;
+      let totalInserted = 0, totalUpdated = 0, totalSkipped = 0;
 
-      const data = await resp.json().catch(() => ({}));
-      log("Response: " + resp.status);
-      log(JSON.stringify(data, null, 2));
+      for (let i = 0; i < rows.length; i += chunkSize) {
+        const chunk = rows.slice(i, i + chunkSize);
+
+        const resp = await fetch(`/api/import?category=${encodeURIComponent(cat)}&city=${encodeURIComponent("Астана")}`, {
+          method: "POST",
+          headers: {"content-type":"application/json"},
+          body: JSON.stringify(chunk)
+        });
+
+        const data = await resp.json().catch(() => ({}));
+        log(`Chunk ${i/chunkSize + 1}: status ${resp.status}`);
+        log(JSON.stringify(data, null, 2));
+
+        totalInserted += (data.inserted || 0);
+        totalUpdated += (data.updated || 0);
+        totalSkipped += (data.skipped || 0);
+      }
+
+      log(`DONE. inserted=${totalInserted} updated=${totalUpdated} skipped=${totalSkipped}`);
     };
   </script>
 </body>
