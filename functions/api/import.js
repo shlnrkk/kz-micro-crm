@@ -7,6 +7,10 @@ const json = (data, status = 200) =>
 const nowIso = () => new Date().toISOString();
 
 export async function onRequestPost({ request, env }) {
+  const url = new URL(request.url);
+  const forcedCategory = (url.searchParams.get("category") || "").trim() || null;
+  const forcedCity = (url.searchParams.get("city") || "").trim() || null;
+  
   const payload = await request.json();
   if (!Array.isArray(payload)) return json({ error: "Expected array" }, 400);
 
@@ -14,9 +18,11 @@ export async function onRequestPost({ request, env }) {
   let updated = 0;
 
   for (const r of payload) {
-    const company_name = (r.company_name || "").trim();
-    const category = (r.category || "").trim();
-    const city = (r.city || "").trim();
+    const company_name = (r.company_name || r.name || r.title || "").trim();
+    
+    const category = ((r.category || r.Category || r.cat || "").trim() || forcedCategory || "").trim();
+    const city = ((r.city || r.City || "").trim() || forcedCity || "").trim();
+    
     const source_url = (r.source_url || "").trim() || null;
 
     if (!company_name || !category || !city) continue;

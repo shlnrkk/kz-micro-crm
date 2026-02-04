@@ -33,7 +33,13 @@
       const rows = parsed.data;
       log("Rows: " + rows.length);
 
-      const resp = await fetch("/api/import", {
+      const fname = (f.name || "").toLowerCase();
+      let cat = "";
+      if (fname.includes("stomat")) cat = "stomatology";
+      else if (fname.includes("business")) cat = "business_center";
+      else if (fname.includes("auto")) cat = "auto_service";
+
+      const resp = await fetch(`/api/import?category=${encodeURIComponent(cat)}&city=${encodeURIComponent("Астана")}`, {
         method: "POST",
         headers: {"content-type":"application/json"},
         body: JSON.stringify(rows)
