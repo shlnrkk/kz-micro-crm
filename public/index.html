@@ -1,11 +1,584 @@
 <!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>Micro CRM</title>
-  </head>
-  <body>
-    <h1>Micro CRM</h1>
-    <p>Deployed ✅</p>
-  </body>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>KZ Micro CRM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-50 text-slate-900">
+  <div class="min-h-screen">
+    <!-- Top bar -->
+    <header class="sticky top-0 z-10 border-b bg-white/80 backdrop-blur">
+      <div class="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="h-9 w-9 rounded-xl bg-slate-900 text-white grid place-items-center font-semibold">KZ</div>
+          <div>
+            <div class="font-semibold leading-5">Micro CRM</div>
+            <div class="text-xs text-slate-500">Leads • Status • Follow-up</div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <a href="/import.html" class="rounded-lg border bg-white px-3 py-2 text-sm hover:bg-slate-50">
+            Import CSV
+          </a>
+          <button id="refreshBtn" class="rounded-lg bg-slate-900 px-3 py-2 text-sm text-white hover:bg-slate-800">
+            Refresh
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="mx-auto max-w-7xl px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <!-- Left: table -->
+      <section class="lg:col-span-2 space-y-3">
+        <!-- Filters -->
+        <div class="rounded-2xl border bg-white p-4">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <label class="block">
+              <div class="text-xs text-slate-500 mb-1">Поиск</div>
+              <input id="q" class="w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
+                     placeholder="Компания / телефон / сайт" />
+            </label>
+
+            <label class="block">
+              <div class="text-xs text-slate-500 mb-1">Категория</div>
+              <select id="category" class="w-full rounded-xl border px-3 py-2 text-sm">
+                <option value="">Все</option>
+                <option value="stomatology">stomatology</option>
+                <option value="auto_service">auto_service</option>
+                <option value="business_center">business_center</option>
+              </select>
+            </label>
+
+            <label class="block">
+              <div class="text-xs text-slate-500 mb-1">Приоритет</div>
+              <select id="priority" class="w-full rounded-xl border px-3 py-2 text-sm">
+                <option value="">Все</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+              </select>
+            </label>
+
+            <label class="block">
+              <div class="text-xs text-slate-500 mb-1">Статус</div>
+              <select id="status" class="w-full rounded-xl border px-3 py-2 text-sm">
+                <option value="">Все</option>
+                <option value="New">New</option>
+                <option value="Qualified">Qualified</option>
+                <option value="Contacted">Contacted</option>
+                <option value="Interested">Interested</option>
+                <option value="Meeting">Meeting</option>
+                <option value="Proposal">Proposal</option>
+                <option value="Won">Won</option>
+                <option value="Lost">Lost</option>
+                <option value="DNC">DNC</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <div class="text-xs text-slate-500">
+              <span id="countText">—</span>
+              <span class="mx-2">•</span>
+              <span class="inline-flex items-center gap-1">
+                City:
+                <span class="font-medium text-slate-700" id="cityText">Астана</span>
+              </span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button id="applyBtn" class="rounded-xl bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800">
+                Apply
+              </button>
+              <button id="clearBtn" class="rounded-xl border px-4 py-2 text-sm hover:bg-slate-50">
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="rounded-2xl border bg-white overflow-hidden">
+          <div class="px-4 py-3 border-b flex items-center justify-between">
+            <div class="text-sm font-medium">Leads</div>
+            <div class="text-xs text-slate-500">Click a row to open</div>
+          </div>
+
+          <div class="overflow-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-slate-50 text-slate-600">
+                <tr>
+                  <th class="text-left px-4 py-2 font-medium">Компания</th>
+                  <th class="text-left px-4 py-2 font-medium">Контакты</th>
+                  <th class="text-left px-4 py-2 font-medium">Score</th>
+                  <th class="text-left px-4 py-2 font-medium">Pri</th>
+                  <th class="text-left px-4 py-2 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody id="tbody" class="divide-y"></tbody>
+            </table>
+          </div>
+
+          <div class="px-4 py-3 border-t flex items-center justify-between">
+            <div class="text-xs text-slate-500" id="pagerText">—</div>
+            <div class="flex items-center gap-2">
+              <button id="prevBtn" class="rounded-lg border px-3 py-1.5 text-sm hover:bg-slate-50">Prev</button>
+              <button id="nextBtn" class="rounded-lg border px-3 py-1.5 text-sm hover:bg-slate-50">Next</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: details -->
+      <aside class="lg:col-span-1 space-y-3">
+        <div class="rounded-2xl border bg-white p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="text-sm text-slate-500">Selected lead</div>
+              <div id="leadTitle" class="text-lg font-semibold mt-1">—</div>
+              <div id="leadMeta" class="text-xs text-slate-500 mt-1">—</div>
+            </div>
+            <span id="badge" class="hidden rounded-full px-2 py-1 text-xs border"></span>
+          </div>
+
+          <div class="mt-4 grid gap-2 text-sm">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-500">Phone</span>
+              <span id="leadPhone" class="font-medium text-right">—</span>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-500">Email</span>
+              <span id="leadEmail" class="font-medium text-right">—</span>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-500">Website</span>
+              <a id="leadWeb" class="font-medium text-right text-slate-900 underline decoration-slate-300 underline-offset-4" href="#" target="_blank">—</a>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-500">Instagram</span>
+              <a id="leadIg" class="font-medium text-right text-slate-900 underline decoration-slate-300 underline-offset-4" href="#" target="_blank">—</a>
+            </div>
+          </div>
+
+          <div class="mt-4 border-t pt-4">
+            <div class="grid grid-cols-2 gap-2">
+              <label class="block">
+                <div class="text-xs text-slate-500 mb-1">Status</div>
+                <select id="editStatus" class="w-full rounded-xl border px-3 py-2 text-sm">
+                  <option value="New">New</option>
+                  <option value="Qualified">Qualified</option>
+                  <option value="Contacted">Contacted</option>
+                  <option value="Interested">Interested</option>
+                  <option value="Meeting">Meeting</option>
+                  <option value="Proposal">Proposal</option>
+                  <option value="Won">Won</option>
+                  <option value="Lost">Lost</option>
+                  <option value="DNC">DNC</option>
+                </select>
+              </label>
+
+              <label class="block">
+                <div class="text-xs text-slate-500 mb-1">Priority</div>
+                <select id="editPriority" class="w-full rounded-xl border px-3 py-2 text-sm">
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                </select>
+              </label>
+
+              <label class="block col-span-2">
+                <div class="text-xs text-slate-500 mb-1">Next follow-up (ISO or yyyy-mm-dd)</div>
+                <input id="editFollow" class="w-full rounded-xl border px-3 py-2 text-sm" placeholder="2026-02-06" />
+              </label>
+
+              <label class="block col-span-2">
+                <div class="text-xs text-slate-500 mb-1">Notes</div>
+                <textarea id="editNotes" class="w-full rounded-xl border px-3 py-2 text-sm" rows="3" placeholder="Короткая заметка"></textarea>
+              </label>
+            </div>
+
+            <div class="mt-3 flex items-center gap-2">
+              <button id="saveBtn" class="rounded-xl bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800">
+                Save
+              </button>
+              <button id="open2gisBtn" class="rounded-xl border px-4 py-2 text-sm hover:bg-slate-50">
+                Open source
+              </button>
+            </div>
+
+            <div id="saveMsg" class="mt-2 text-xs text-slate-500"></div>
+          </div>
+        </div>
+
+        <!-- Activities -->
+        <div class="rounded-2xl border bg-white p-4">
+          <div class="flex items-center justify-between">
+            <div class="text-sm font-medium">Activities</div>
+            <div class="text-xs text-slate-500">log calls/emails/DM</div>
+          </div>
+
+          <div class="mt-3 grid gap-2">
+            <div class="grid grid-cols-2 gap-2">
+              <label class="block">
+                <div class="text-xs text-slate-500 mb-1">Channel</div>
+                <select id="actChannel" class="w-full rounded-xl border px-3 py-2 text-sm">
+                  <option value="call">call</option>
+                  <option value="email">email</option>
+                  <option value="instagram">instagram</option>
+                  <option value="whatsapp">whatsapp</option>
+                  <option value="other">other</option>
+                </select>
+              </label>
+              <label class="block">
+                <div class="text-xs text-slate-500 mb-1">Direction</div>
+                <select id="actDirection" class="w-full rounded-xl border px-3 py-2 text-sm">
+                  <option value="outbound">outbound</option>
+                  <option value="inbound">inbound</option>
+                </select>
+              </label>
+            </div>
+
+            <label class="block">
+              <div class="text-xs text-slate-500 mb-1">Result</div>
+              <input id="actResult" class="w-full rounded-xl border px-3 py-2 text-sm" placeholder="no_answer / replied / interested / not_now" />
+            </label>
+
+            <label class="block">
+              <div class="text-xs text-slate-500 mb-1">Note</div>
+              <textarea id="actNote" class="w-full rounded-xl border px-3 py-2 text-sm" rows="2" placeholder="Что произошло, следующий шаг"></textarea>
+            </label>
+
+            <button id="addActBtn" class="rounded-xl border px-4 py-2 text-sm hover:bg-slate-50">
+              Add activity
+            </button>
+
+            <div id="actsList" class="mt-2 space-y-2"></div>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    // State
+    let leads = [];
+    let currentLead = null;
+    let offset = 0;
+    const limit = 20;
+
+    // DOM elements
+    const tbodyEl = document.getElementById("tbody");
+    const qEl = document.getElementById("q");
+    const categoryEl = document.getElementById("category");
+    const priorityEl = document.getElementById("priority");
+    const statusEl = document.getElementById("status");
+    const countTextEl = document.getElementById("countText");
+    const pagerTextEl = document.getElementById("pagerText");
+    const prevBtnEl = document.getElementById("prevBtn");
+    const nextBtnEl = document.getElementById("nextBtn");
+    const applyBtnEl = document.getElementById("applyBtn");
+    const clearBtnEl = document.getElementById("clearBtn");
+    const refreshBtnEl = document.getElementById("refreshBtn");
+
+    // Detail view elements
+    const leadTitleEl = document.getElementById("leadTitle");
+    const leadMetaEl = document.getElementById("leadMeta");
+    const badgeEl = document.getElementById("badge");
+    const leadPhoneEl = document.getElementById("leadPhone");
+    const leadEmailEl = document.getElementById("leadEmail");
+    const leadWebEl = document.getElementById("leadWeb");
+    const leadIgEl = document.getElementById("leadIg");
+    const editStatusEl = document.getElementById("editStatus");
+    const editPriorityEl = document.getElementById("editPriority");
+    const editFollowEl = document.getElementById("editFollow");
+    const editNotesEl = document.getElementById("editNotes");
+    const saveBtnEl = document.getElementById("saveBtn");
+    const open2gisBtnEl = document.getElementById("open2gisBtn");
+    const saveMsgEl = document.getElementById("saveMsg");
+
+    // Activities elements
+    const actChannelEl = document.getElementById("actChannel");
+    const actDirectionEl = document.getElementById("actDirection");
+    const actResultEl = document.getElementById("actResult");
+    const actNoteEl = document.getElementById("actNote");
+    const addActBtnEl = document.getElementById("addActBtn");
+    const actsListEl = document.getElementById("actsList");
+
+    // Initialize
+    document.addEventListener("DOMContentLoaded", () => {
+      loadLeads();
+      setupEventListeners();
+    });
+
+    function setupEventListeners() {
+      applyBtnEl.onclick = () => { offset = 0; loadLeads(); };
+      clearBtnEl.onclick = () => {
+        qEl.value = "";
+        categoryEl.value = "";
+        priorityEl.value = "";
+        statusEl.value = "";
+        offset = 0;
+        loadLeads();
+      };
+      refreshBtnEl.onclick = () => loadLeads();
+      prevBtnEl.onclick = () => { offset = Math.max(0, offset - limit); loadLeads(); };
+      nextBtnEl.onclick = () => { offset += limit; loadLeads(); };
+
+      // Lead detail controls
+      saveBtnEl.onclick = saveCurrentLead;
+      open2gisBtnEl.onclick = openCurrentLeadInSource;
+      addActBtnEl.onclick = addActivityToCurrentLead;
+
+      // Auto-save when editing lead details
+      [editStatusEl, editPriorityEl, editFollowEl, editNotesEl].forEach(el => {
+        el.onchange = saveCurrentLead;
+        el.oninput = debounce(saveCurrentLead, 1000);
+      });
+    }
+
+    async function loadLeads() {
+      const params = new URLSearchParams({
+        q: qEl.value.trim(),
+        category: categoryEl.value,
+        priority: priorityEl.value,
+        status: statusEl.value,
+        limit,
+        offset
+      });
+
+      // Remove empty params
+      for (let [key, value] of params.entries()) {
+        if (!value) params.delete(key);
+      }
+
+      try {
+        const resp = await fetch(`/api/leads?${params}`);
+        const data = await resp.json();
+
+        leads = data.items || [];
+        renderTable();
+        updatePager(data.limit, data.offset);
+      } catch (e) {
+        console.error("Failed to load leads:", e);
+      }
+    }
+
+    function renderTable() {
+      tbodyEl.innerHTML = "";
+
+      for (const lead of leads) {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 cursor-pointer";
+        tr.innerHTML = `
+          <td class="px-4 py-3">
+            <div class="font-medium">${esc(lead.company_name || "—")}</div>
+            <div class="text-xs text-slate-500">${esc(lead.category || "—")}</div>
+          </td>
+          <td class="px-4 py-3">
+            <div>${esc(lead.phone_primary || "—")}</div>
+            <div class="truncate text-xs text-slate-500 max-w-32">${esc(lead.email_primary || "—")}</div>
+          </td>
+          <td class="px-4 py-3 text-center">${lead.lead_score || "—"}</td>
+          <td class="px-4 py-3 text-center">
+            <span class="inline-block rounded-full px-2 py-1 text-xs ${priorityColor(lead.priority)}">
+              ${esc(lead.priority || "—")}
+            </span>
+          </td>
+          <td class="px-4 py-3">
+            <div class="truncate max-w-24">${esc(lead.status || "—")}</div>
+          </td>
+        `;
+        tr.onclick = () => selectLead(lead.id);
+        tbodyEl.appendChild(tr);
+      }
+
+      countTextEl.textContent = `${leads.length} shown`;
+    }
+
+    function updatePager(limit, offset) {
+      const hasMore = leads.length === limit;
+      const start = offset + 1;
+      const end = offset + leads.length;
+
+      pagerTextEl.textContent = `Results ${start}–${end}`;
+      prevBtnEl.disabled = offset === 0;
+      nextBtnEl.disabled = !hasMore;
+    }
+
+    async function selectLead(id) {
+      currentLead = leads.find(lead => lead.id === id);
+      if (!currentLead) {
+        // If not in current view, fetch directly
+        try {
+          const resp = await fetch(`/api/leads/${id}`);
+          const data = await resp.json();
+          if (data.error) return;
+          currentLead = data.lead;
+        } catch (e) {
+          console.error("Failed to fetch lead:", e);
+          return;
+        }
+      }
+
+      renderLeadDetail();
+    }
+
+    function renderLeadDetail() {
+      if (!currentLead) return;
+
+      leadTitleEl.textContent = currentLead.company_name || "—";
+      leadMetaEl.textContent = `${currentLead.city || "—"} • ${currentLead.category || "—"}`;
+
+      // Update badge based on priority
+      const priority = currentLead.priority || "C";
+      badgeEl.className = "rounded-full px-2 py-1 text-xs border";
+      badgeEl.classList.add(...priorityColorClasses(priority));
+      badgeEl.textContent = priority;
+      badgeEl.style.display = "inline-block";
+
+      leadPhoneEl.textContent = currentLead.phone_primary || "—";
+      leadEmailEl.textContent = currentLead.email_primary || "—";
+      leadWebEl.textContent = currentLead.website_primary || "—";
+      leadWebEl.href = currentLead.website_primary || "#";
+      leadIgEl.textContent = currentLead.instagram || "—";
+      leadIgEl.href = currentLead.instagram ? `https://instagram.com/${currentLead.instagram.replace("@", "")}` : "#";
+
+      // Update edit controls
+      editStatusEl.value = currentLead.status || "New";
+      editPriorityEl.value = currentLead.priority || "C";
+      editFollowEl.value = currentLead.next_followup_at ? new Date(currentLead.next_followup_at).toISOString().split("T")[0] : "";
+      editNotesEl.value = currentLead.notes || "";
+
+      // Load activities
+      renderActivities(currentLead.activities || []);
+    }
+
+    function renderActivities(activities) {
+      actsListEl.innerHTML = "";
+      if (!activities.length) {
+        actsListEl.innerHTML = `<div class="text-xs text-slate-500 text-center py-2">No activities yet</div>`;
+        return;
+      }
+
+      for (const act of activities) {
+        const div = document.createElement("div");
+        div.className = "rounded-xl border bg-slate-50 p-3 text-xs";
+        const date = new Date(act.created_at).toLocaleString();
+        div.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="font-medium">${esc(act.channel)} • ${esc(act.direction)}</span>
+            <span class="text-slate-500">${date}</span>
+          </div>
+          ${act.result ? `<div class="mt-1"><span class="text-slate-600">Result:</span> ${esc(act.result)}</div>` : ""}
+          ${act.note ? `<div class="mt-1 text-slate-600">${esc(act.note)}</div>` : ""}
+        `;
+        actsListEl.appendChild(div);
+      }
+    }
+
+    async function saveCurrentLead() {
+      if (!currentLead) return;
+
+      const status = editStatusEl.value;
+      const priority = editPriorityEl.value;
+      const next_followup_at = editFollowEl.value ? new Date(editFollowEl.value).toISOString() : null;
+      const notes = editNotesEl.value;
+
+      try {
+        const resp = await fetch(`/api/leads/${currentLead.id}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ status, priority, next_followup_at, notes })
+        });
+
+        const data = await resp.json();
+        if (data.ok) {
+          Object.assign(currentLead, data.lead);
+          saveMsgEl.textContent = "Saved!";
+          setTimeout(() => saveMsgEl.textContent = "", 2000);
+        } else {
+          saveMsgEl.textContent = "Failed to save";
+        }
+      } catch (e) {
+        console.error("Failed to save lead:", e);
+        saveMsgEl.textContent = "Failed to save";
+      }
+    }
+
+    function openCurrentLeadInSource() {
+      if (!currentLead?.source_url) return;
+      window.open(currentLead.source_url, "_blank");
+    }
+
+    async function addActivityToCurrentLead() {
+      if (!currentLead) return;
+
+      const channel = actChannelEl.value;
+      const direction = actDirectionEl.value;
+      const result = actResultEl.value.trim() || null;
+      const note = actNoteEl.value.trim() || null;
+
+      try {
+        const resp = await fetch(`/api/leads/${currentLead.id}/activities`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ channel, direction, result, note })
+        });
+
+        const data = await resp.json();
+        if (data.ok) {
+          // Reset form
+          actChannelEl.value = "call";
+          actDirectionEl.value = "outbound";
+          actResultEl.value = "";
+          actNoteEl.value = "";
+          
+          // Reload lead with activities
+          selectLead(currentLead.id);
+        }
+      } catch (e) {
+        console.error("Failed to add activity:", e);
+      }
+    }
+
+    function esc(s) {
+      return (s + "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function priorityColor(priority) {
+      switch (priority) {
+        case "A": return "bg-red-100 text-red-800";
+        case "B": return "bg-yellow-100 text-yellow-800";
+        case "C": return "bg-green-100 text-green-800";
+        default: return "bg-slate-100 text-slate-800";
+      }
+    }
+
+    function priorityColorClasses(priority) {
+      switch (priority) {
+        case "A": return ["bg-red-100", "text-red-800", "border-red-200"];
+        case "B": return ["bg-yellow-100", "text-yellow-800", "border-yellow-200"];
+        case "C": return ["bg-green-100", "text-green-800", "border-green-200"];
+        default: return ["bg-slate-100", "text-slate-800", "border-slate-200"];
+      }
+    }
+
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+  </script>
+</body>
 </html>
