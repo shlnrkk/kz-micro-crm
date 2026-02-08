@@ -12,11 +12,19 @@ function clampInt(v, def, min, max) {
 
 export async function onRequestGet({ request, env }) {
   try {
-    // Simple test query first
-    const testRes = await env.DB.prepare("SELECT COUNT(*) as count FROM leads").all();
-    console.log("Leads count:", testRes);
+    // Test if activities table exists
+    const activitiesTest = await env.DB.prepare("SELECT COUNT(*) as count FROM activities").all();
+    console.log("Activities count:", activitiesTest);
     
-    return json({ message: "Function working", leadsCount: testRes.results[0].count });
+    // Test if do_not_contact table exists
+    const dncTest = await env.DB.prepare("SELECT COUNT(*) as count FROM do_not_contact").all();
+    console.log("DNC count:", dncTest);
+    
+    return json({ 
+      message: "Tables exist", 
+      activitiesCount: activitiesTest.results[0].count,
+      dncCount: dncTest.results[0].count
+    });
   } catch (error) {
     console.error("Error:", error);
     return json({ error: error.message }, 500);
