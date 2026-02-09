@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Email Feedback - KZ Micro CRM</title>
+  <title>Email Replies - KZ Micro CRM</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -13,10 +13,10 @@
     <header class="sticky top-0 z-10 border-b bg-white/80 backdrop-blur">
       <div class="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between gap-3">
         <div class="flex items-center gap-3">
-          <div class="h-9 w-9 rounded-xl bg-slate-900 text-white grid place-items-center font-semibold">FB</div>
+          <div class="h-9 w-9 rounded-xl bg-green-600 text-white grid place-items-center font-semibold">RF</div>
           <div>
-            <div class="font-semibold leading-5">Feedback Tracker</div>
-            <div class="text-xs text-slate-500">Email replies & responses</div>
+            <div class="font-semibold leading-5">Reply Feed</div>
+            <div class="text-xs text-slate-500">Email replies & feedback received</div>
           </div>
         </div>
 
@@ -37,7 +37,7 @@
     <!-- Main -->
     <main class="mx-auto max-w-7xl px-4 py-6">
       <div class="rounded-2xl border bg-white p-4 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
           <label class="block">
             <div class="text-xs text-slate-500 mb-1">Channel</div>
             <select id="channel" class="w-full rounded-xl border px-3 py-2 text-sm">
@@ -50,16 +50,8 @@
           </label>
 
           <label class="block">
-            <div class="text-xs text-slate-500 mb-1">Direction</div>
-            <select id="direction" class="w-full rounded-xl border px-3 py-2 text-sm">
-              <option value="inbound">Inbound</option>
-              <option value="outbound">Outbound</option>
-            </select>
-          </label>
-
-          <label class="block">
             <div class="text-xs text-slate-500 mb-1">Result</div>
-            <input id="result" class="w-full rounded-xl border px-3 py-2 text-sm" placeholder="reply / no_answer / interested" />
+            <input id="result" class="w-full rounded-xl border px-3 py-2 text-sm" placeholder="reply / interested / not_now / no_answer" />
           </label>
 
           <label class="block">
@@ -76,9 +68,29 @@
         </button>
       </div>
 
+      <!-- Stats summary -->
+      <div id="stats" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="rounded-xl border bg-white p-4 text-center">
+          <div class="text-2xl font-bold text-slate-900" id="totalReplies">0</div>
+          <div class="text-sm text-slate-500">Total Replies</div>
+        </div>
+        <div class="rounded-xl border bg-white p-4 text-center">
+          <div class="text-2xl font-bold text-blue-600" id="emailReplies">0</div>
+          <div class="text-sm text-slate-500">Email Replies</div>
+        </div>
+        <div class="rounded-xl border bg-white p-4 text-center">
+          <div class="text-2xl font-bold text-green-600" id="positiveReplies">0</div>
+          <div class="text-sm text-slate-500">Positive</div>
+        </div>
+        <div class="rounded-xl border bg-white p-4 text-center">
+          <div class="text-2xl font-bold text-orange-600" id="needsFollowup">0</div>
+          <div class="text-sm text-slate-500">Need Follow-up</div>
+        </div>
+      </div>
+
       <!-- Feedback list -->
       <div id="feedbackList" class="space-y-3">
-        <div class="text-center py-8 text-slate-500">Loading feedback...</div>
+        <div class="text-center py-8 text-slate-500">Loading replies...</div>
       </div>
 
       <!-- Pagination -->
@@ -102,8 +114,8 @@
 
     // DOM elements
     const feedbackListEl = document.getElementById("feedbackList");
+    const statsEl = document.getElementById("stats");
     const channelEl = document.getElementById("channel");
-    const directionEl = document.getElementById("direction");
     const resultEl = document.getElementById("result");
     const limitEl = document.getElementById("limit");
     const applyBtnEl = document.getElementById("applyBtn");
@@ -112,6 +124,12 @@
     const prevBtnEl = document.getElementById("prevBtn");
     const nextBtnEl = document.getElementById("nextBtn");
     const pagerTextEl = document.getElementById("pagerText");
+    
+    // Stats elements
+    const totalRepliesEl = document.getElementById("totalReplies");
+    const emailRepliesEl = document.getElementById("emailReplies");
+    const positiveRepliesEl = document.getElementById("positiveReplies");
+    const needsFollowupEl = document.getElementById("needsFollowup");
 
     // Initialize
     document.addEventListener("DOMContentLoaded", () => {
@@ -123,7 +141,6 @@
       applyBtnEl.onclick = () => { offset = 0; loadFeedback(); };
       clearBtnEl.onclick = () => {
         channelEl.value = "email";
-        directionEl.value = "inbound";
         resultEl.value = "";
         limitEl.value = defaultLimit;
         offset = 0;
@@ -141,7 +158,7 @@
     async function loadFeedback() {
       const params = new URLSearchParams({
         channel: channelEl.value,
-        direction: directionEl.value,
+        // Direction is always inbound for replies
         result: resultEl.value.trim(),
         limit: getLimit(),
         offset
@@ -158,47 +175,92 @@
 
         feedback = data.items || [];
         renderFeedbackList();
+        updateStats(data.items || []);
         updatePager(data.count, data.limit, data.offset);
       } catch (e) {
         console.error("Failed to load feedback:", e);
-        feedbackListEl.innerHTML = `<div class="text-center py-8 text-red-500">Error loading feedback: ${e.message}</div>`;
+        feedbackListEl.innerHTML = `<div class="text-center py-8 text-red-500">Error loading replies: ${e.message}</div>`;
       }
+    }
+
+    function updateStats(items) {
+      const total = items.length;
+      const emailCount = items.filter(item => item.channel === 'email').length;
+      const positiveCount = items.filter(item => 
+        item.result && ['interested', 'replied', 'positive', 'yes', 'ok'].includes(item.result.toLowerCase())
+      ).length;
+      const followupCount = items.filter(item => 
+        item.result && ['follow_up', 'later', 'maybe', 'not_now', 'considering'].includes(item.result.toLowerCase())
+      ).length;
+
+      totalRepliesEl.textContent = total;
+      emailRepliesEl.textContent = emailCount;
+      positiveRepliesEl.textContent = positiveCount;
+      needsFollowupEl.textContent = followupCount;
     }
 
     function renderFeedbackList() {
       if (!feedback.length) {
-        feedbackListEl.innerHTML = `<div class="text-center py-8 text-slate-500">No feedback found</div>`;
+        feedbackListEl.innerHTML = `<div class="text-center py-8 text-slate-500">No replies received yet</div>`;
         return;
       }
 
-      feedbackListEl.innerHTML = feedback.map(fb => `
-        <div class="rounded-xl border bg-slate-50 p-4">
-          <div class="flex items-start justify-between">
-            <div>
-              <div class="font-medium">${esc(fb.company_name || "—")} (${esc(fb.email_primary || "—")})</div>
-              <div class="text-sm text-slate-600 mt-1">${esc(fb.note || "No note")}</div>
-            </div>
-            <div class="text-right text-xs text-slate-500">
-              ${formatDate(fb.created_at)}
-              <div class="mt-1">
-                <span class="inline-block rounded-full px-2 py-1 text-xs bg-blue-100 text-blue-800">
-                  ${esc(fb.channel)} • ${esc(fb.direction)}
-                </span>
-                <span class="inline-block rounded-full px-2 py-1 text-xs bg-green-100 text-green-800 ml-1">
-                  ${esc(fb.result || "—")}
-                </span>
+      feedbackListEl.innerHTML = feedback.map(fb => {
+        const resultClass = getResultClass(fb.result);
+        const date = formatDate(fb.created_at);
+        
+        return `
+          <div class="rounded-xl border bg-white p-4 hover:bg-slate-50 transition-colors">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="font-medium">${esc(fb.company_name || "Unknown Business")}</div>
+                  <span class="inline-block rounded-full px-2 py-1 text-xs bg-blue-100 text-blue-800">
+                    ${esc(fb.channel)}
+                  </span>
+                  <span class="inline-block rounded-full px-2 py-1 text-xs ${resultClass}">
+                    ${esc(fb.result || "received")}
+                  </span>
+                </div>
+                
+                <div class="text-sm text-slate-600 mb-2">${esc(fb.note || "No message content")}</div>
+                
+                <div class="flex flex-wrap gap-2 text-xs text-slate-500">
+                  ${fb.email_primary ? `<span class="bg-slate-100 px-2 py-1 rounded">${esc(fb.email_primary)}</span>` : ''}
+                  ${fb.phone_primary ? `<span class="bg-slate-100 px-2 py-1 rounded">${esc(fb.phone_primary)}</span>` : ''}
+                  ${fb.category ? `<span class="bg-slate-100 px-2 py-1 rounded">${esc(fb.category)}</span>` : ''}
+                </div>
+              </div>
+              
+              <div class="text-right text-xs text-slate-500">
+                ${date}
               </div>
             </div>
           </div>
-        </div>
-      `).join("");
+        `;
+      }).join("");
+    }
+
+    function getResultClass(result) {
+      if (!result) return "bg-gray-100 text-gray-800";
+      
+      const lowerResult = result.toLowerCase();
+      if (['interested', 'replied', 'positive', 'yes', 'ok', 'good', 'thanks'].includes(lowerResult)) {
+        return "bg-green-100 text-green-800";
+      } else if (['follow_up', 'later', 'maybe', 'not_now', 'considering', 'soon'].includes(lowerResult)) {
+        return "bg-yellow-100 text-yellow-800";
+      } else if (['no', 'not_interested', 'no_thanks', 'not_now'].includes(lowerResult)) {
+        return "bg-red-100 text-red-800";
+      } else {
+        return "bg-blue-100 text-blue-800";
+      }
     }
 
     function updatePager(count, limit, currentOffset) {
       const start = currentOffset + 1;
       const end = Math.min(currentOffset + feedback.length, count);
       
-      pagerTextEl.textContent = `Results ${start}–${end} of ${count}`;
+      pagerTextEl.textContent = `Showing ${start}–${end} of ${count} replies`;
       prevBtnEl.disabled = currentOffset === 0;
       nextBtnEl.disabled = end >= count;
     }
