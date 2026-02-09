@@ -1,8 +1,4 @@
-const json = (data, status = 200) =>
-  new Response(JSON.stringify(data), {
-    status,
-    headers: { "content-type": "application/json; charset=utf-8" },
-  });
+import { json } from "./_utils.js";
 
 const upsertSql = `
 INSERT INTO leads (
@@ -39,7 +35,7 @@ export async function onRequestPost({ request, env }) {
   const url = new URL(request.url);
   const forcedCategory = (url.searchParams.get("category") || "").trim() || null;
   const forcedCity = (url.searchParams.get("city") || "").trim() || null;
-  
+
   const payload = await request.json();
   if (!Array.isArray(payload)) return json({ error: "Expected array" }, 400);
 

@@ -6,6 +6,8 @@ const json = (data, status = 200) =>
 
 const nowIso = () => new Date().toISOString();
 
+import { json } from "../_utils.js";
+
 export async function onRequestPost({ request, env }) {
   try {
     const body = await request.json().catch(() => ({}));
@@ -17,7 +19,7 @@ export async function onRequestPost({ request, env }) {
     if (!lead_id) return json({ error: "lead_id required" }, 400);
 
     const id = crypto.randomUUID();
-    const ts = nowIso();
+    const ts = new Date().toISOString();
 
     // Insert activity
     await env.DB.prepare(`

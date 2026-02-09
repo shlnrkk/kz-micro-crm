@@ -10,6 +10,8 @@ function clampInt(v, def, min, max) {
   return Math.max(min, Math.min(max, n));
 }
 
+import { json, clampInt } from "../_utils.js";
+
 export async function onRequestGet({ request, env }) {
   try {
     const url = new URL(request.url);
@@ -22,14 +24,26 @@ export async function onRequestGet({ request, env }) {
     console.log("Activities count:", activitiesCount.results[0].count);
     console.log("DNC count:", dncCount.results[0].count);
 
-    // Simple query that works with existing data
+    // Query that ensures each business gets only one email maximum
+    // This checks that the lead has never had an outbound email activity
     const sql = `
-      SELECT id, company_name, email_primary, phone_primary, status, priority, lead_score
-      FROM leads 
+      SELECT l.*
+      FROM leads l
       WHERE email_primary IS NOT NULL 
         AND TRIM(email_primary) <> ''
-        AND status IN ('New','Qualified')
-      ORDER BY priority ASC, lead_score DESC, updated_at DESC
+        AND l.status IN ('New','Qualified')
+        AND NOT EXISTS (
+          SELECT 1 FROM activities a
+          WHERE a.lead_id = l.id
+            AND a.channel = 'email'
+            AND a.direction = 'outbound'
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM do_not_contact d
+          WHERE (d.email IS NOT NULL AND d.email = l.email_primary)
+             OR (d.phone IS NOT NULL AND d.phone = l.phone_primary)
+        )
+      ORDER BY l.priority ASC, l.lead_score DESC, l.updated_at DESC
       LIMIT ?
     `;
 
