@@ -1,5 +1,6 @@
 import { json, clampInt } from "./_utils.js";
 
+// Feedback API endpoint for tracking email replies and responses
 export async function onRequestGet({ request, env }) {
   try {
     const url = new URL(request.url);
