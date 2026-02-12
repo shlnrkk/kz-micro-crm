@@ -15,16 +15,8 @@ export async function onRequestGet({ request, env }) {
     const url = new URL(request.url);
     const limit = clampInt(url.searchParams.get("limit"), 20, 1, 200);
 
-    // Check if required tables exist and have data
-    const activitiesCount = await env.DB.prepare("SELECT COUNT(*) as count FROM activities").all();
-    const dncCount = await env.DB.prepare("SELECT COUNT(*) as count FROM do_not_contact").all();
-    
-    console.log("Activities count:", activitiesCount.results[0].count);
-    console.log("DNC count:", dncCount.results[0].count);
-
     // Query that ensures each business gets only one email maximum
     // This checks that the lead has never had an outbound email activity
-    // Using contact_value instead of separate email/phone columns in do_not_contact
     const sql = `
       SELECT l.*
       FROM leads l
@@ -36,10 +28,6 @@ export async function onRequestGet({ request, env }) {
           WHERE a.lead_id = l.id
             AND a.channel = 'email'
             AND a.direction = 'outbound'
-        )
-        AND NOT EXISTS (
-          SELECT 1 FROM do_not_contact d
-          WHERE d.contact_value = l.email_primary OR d.contact_value = l.phone_primary
         )
       ORDER BY l.priority ASC, l.lead_score DESC, l.updated_at DESC
       LIMIT ?
