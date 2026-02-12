@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Campaign Dashboard - KZ Micro CRM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-50 text-slate-900">
+  <div class="min-h-screen">
+    <!-- Top bar -->
+    <header class="sticky top-0 z-10 border-b bg-white/80 backdrop-blur">
+      <div class="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="h-9 w-9 rounded-xl bg-blue-600 text-white grid place-items-center font-semibold">CD</div>
+          <div>
+            <div class="font-semibold leading-5">Campaign Dashboard</div>
+            <div class="text-xs text-slate-500">Sent messages & received replies</div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <a href="/public/import.html" class="rounded-lg border bg-white px-3 py-2 text-sm hover:bg-slate-50">
+            Import CSV
+          </a>
+          <a href="/public/feedback.html" class="rounded-lg border bg-white px-3 py-2 text-sm hover:bg-slate-50">
+            Feedback
+          </a>
+          <a href="/public/" class="rounded-lg border bg-white px-3 py-2 text-sm hover:bg-slate-50">
+            Back to CRM
+          </a>
+          <button id="refreshBtn" class="rounded-lg bg-slate-900 px-3 py-2 text-sm text-white hover:bg-slate-800">
+            Refresh
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="mx-auto max-w-7xl px-4 py-6">
+      <!-- Stats summary -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="rounded-xl border bg-white p-4 text-center">
+          <div class="text-2xl font-bold text-blue-600" id="totalSent">0</div>
+          <div class="text-sm text-slate-500">Messages Sent</div>
+        </div>
+        <div class="rounded-xl border bg-white p-4 text-center">
+          <div class="text-2xl font-bold text-green-600" id="totalReplies">0</div>
+          <div class="text-sm text-slate-500">Replies Received</div>
+        </div>
+        <div class="rounded-xl border bg-white p-4 text-center">
+          <div class="text-2xl font-bold text-purple-600" id="replyRate">0%</div>
+          <div class="text-sm text-slate-500">Reply Rate</div>
+        </div>
+        <div class="rounded-xl border bg-white p-4 text-center">
+          <div class="text-2xl font-bold text-orange-600" id="pending">0</div>
+          <div class="text-sm text-slate-500">Pending Replies</div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="mb-6 border-b">
+        <nav class="-mb-px flex space-x-8">
+          <button id="sentTab" class="tab-btn border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 border-b-2 py-4 px-1 text-sm font-medium">
+            Sent Messages
+          </button>
+          <button id="repliesTab" class="tab-btn border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 border-b-2 py-4 px-1 text-sm font-medium">
+            Received Replies
+          </button>
+        </nav>
+      </div>
+
+      <!-- Content sections -->
+      <div id="sentSection" class="tab-content">
+        <div class="rounded-2xl border bg-white p-4 mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold">Sent Messages</h2>
+            <div class="flex gap-2">
+              <select id="sentChannelFilter" class="rounded-lg border px-3 py-2 text-sm">
+                <option value="">All Channels</option>
+                <option value="email">Email</option>
+                <option value="call">Call</option>
+                <option value="other">Other</option>
+              </select>
+              <input id="sentSearch" class="rounded-lg border px-3 py-2 text-sm" placeholder="Search..." />
+            </div>
+          </div>
+          
+          <div id="sentList" class="space-y-3">
+            <div class="text-center py-8 text-slate-500">Loading sent messages...</div>
+          </div>
+
+          <!-- Sent Pagination -->
+          <div id="sentPagination" class="mt-6 flex items-center justify-between">
+            <button id="prevSentBtn" class="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50" disabled>
+              Previous
+            </button>
+            <div id="sentPagerText" class="text-sm text-slate-600">-</div>
+            <button id="nextSentBtn" class="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50" disabled>
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="repliesSection" class="tab-content hidden">
+        <div class="rounded-2xl border bg-white p-4 mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold">Received Replies</h2>
+            <div class="flex gap-2">
+              <select id="repliesChannelFilter" class="rounded-lg border px-3 py-2 text-sm">
+                <option value="">All Channels</option>
+                <option value="email">Email</option>
+                <option value="call">Call</option>
+                <option value="other">Other</option>
+              </select>
+              <input id="repliesSearch" class="rounded-lg border px-3 py-2 text-sm" placeholder="Search..." />
+            </div>
+          </div>
+          
+          <div id="repliesList" class="space-y-3">
+            <div class="text-center py-8 text-slate-500">Loading received replies...</div>
+          </div>
+
+          <!-- Replies Pagination -->
+          <div id="repliesPagination" class="mt-6 flex items-center justify-between">
+            <button id="prevRepliesBtn" class="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50" disabled>
+              Previous
+            </button>
+            <div id="repliesPagerText" class="text-sm text-slate-600">-</div>
+            <button id="nextRepliesBtn" class="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50" disabled>
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // State
+    let sentMessages = [];
+    let receivedReplies = [];
+    let sentOffset = 0;
+    let repliesOffset = 0;
+    const pageSize = 20;
+
+    // DOM elements
+    const sentListEl = document.getElementById("sentList");
+    const repliesListEl = document.getElementById("repliesList");
+    const sentSection = document.getElementById("sentSection");
+    const repliesSection = document.getElementById("repliesSection");
+    
+    // Stats elements
+    const totalSentEl = document.getElementById("totalSent");
+    const totalRepliesEl = document.getElementById("totalReplies");
+    const replyRateEl = document.getElementById("replyRate");
+    const pendingEl = document.getElementById("pending");
+
+    // Tab buttons
+    const sentTabBtn = document.getElementById("sentTab");
+    const repliesTabBtn = document.getElementById("repliesTab");
+
+    // Initialize
+    document.addEventListener("DOMContentLoaded", () => {
+      // Set up tab switching
+      sentTabBtn.addEventListener("click", () => switchTab("sent"));
+      repliesTabBtn.addEventListener("click", () => switchTab("replies"));
+      
+      // Set sent tab as active by default
+      setActiveTab("sent");
+      
+      // Load initial data
+      loadDashboardData();
+    });
+
+    function switchTab(tabName) {
+      setActiveTab(tabName);
+      if (tabName === "sent") {
+        loadSentMessages();
+      } else {
+        loadReceivedReplies();
+      }
+    }
+
+    function setActiveTab(tabName) {
+      // Update button styles
+      sentTabBtn.className = tabName === "sent" 
+        ? "tab-btn border-blue-500 text-blue-600 border-b-2 py-4 px-1 text-sm font-medium" 
+        : "tab-btn border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 border-b-2 py-4 px-1 text-sm font-medium";
+      
+      repliesTabBtn.className = tabName === "replies" 
+        ? "tab-btn border-blue-500 text-blue-600 border-b-2 py-4 px-1 text-sm font-medium" 
+        : "tab-btn border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 border-b-2 py-4 px-1 text-sm font-medium";
+      
+      // Show/hide content
+      sentSection.classList.toggle("hidden", tabName !== "sent");
+      repliesSection.classList.toggle("hidden", tabName !== "replies");
+    }
+
+    async function loadDashboardData() {
+      try {
+        // Load sent messages count
+        const sentResp = await fetch('/api/leads?q=&limit=1');
+        const sentData = await sentResp.json();
+        
+        // For outbound messages, we'll need to check activities
+        const activitiesResp = await fetch('/api/activities?channel=email&direction=outbound&limit=1');
+        const activitiesData = await activitiesResp.json();
+        const totalSent = activitiesData.count || 0;
+        
+        // Load received replies count
+        const feedbackResp = await fetch('/api/feedback?channel=email&limit=1');
+        const feedbackData = await feedbackResp.json();
+        const totalReplies = feedbackData.count || 0;
+        
+        // Update stats
+        totalSentEl.textContent = totalSent;
+        totalRepliesEl.textContent = totalReplies;
+        const rate = totalSent > 0 ? Math.round((totalReplies / totalSent) * 100) : 0;
+        replyRateEl.textContent = `${rate}%`;
+        pendingEl.textContent = Math.max(0, totalSent - totalReplies);
+        
+      } catch (e) {
+        console.error("Error loading dashboard data:", e);
+      }
+    }
+
+    async function loadSentMessages() {
+      try {
+        const params = new URLSearchParams({
+          channel: 'email',
+          direction: 'outbound',
+          limit: pageSize,
+          offset: sentOffset
+        });
+
+        const resp = await fetch(`/api/activities?${params}`);
+        const data = await resp.json();
+
+        sentMessages = data.items || [];
+        renderSentMessages();
+        updateSentPager(data.count, data.limit, data.offset);
+      } catch (e) {
+        console.error("Failed to load sent messages:", e);
+        sentListEl.innerHTML = `<div class="text-center py-8 text-red-500">Error loading sent messages: ${e.message}</div>`;
+      }
+    }
+
+    async function loadReceivedReplies() {
+      try {
+        const params = new URLSearchParams({
+          channel: 'email',
+          limit: pageSize,
+          offset: repliesOffset
+        });
+
+        const resp = await fetch(`/api/feedback?${params}`);
+        const data = await resp.json();
+
+        receivedReplies = data.items || [];
+        renderReceivedReplies();
+        updateRepliesPager(data.count, data.limit, data.offset);
+      } catch (e) {
+        console.error("Failed to load received replies:", e);
+        repliesListEl.innerHTML = `<div class="text-center py-8 text-red-500">Error loading received replies: ${e.message}</div>`;
+      }
+    }
+
+    function renderSentMessages() {
+      if (!sentMessages.length) {
+        sentListEl.innerHTML = `<div class="text-center py-8 text-slate-500">No sent messages yet</div>`;
+        return;
+      }
+
+      sentListEl.innerHTML = sentMessages.map(msg => {
+        const date = formatDate(msg.created_at);
+        const resultClass = getResultClass(msg.result);
+        
+        return `
+          <div class="rounded-xl border bg-white p-4 hover:bg-slate-50 transition-colors">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="font-medium">${esc(msg.lead?.company_name || msg.company_name || "Unknown Business")}</div>
+                  <span class="inline-block rounded-full px-2 py-1 text-xs bg-blue-100 text-blue-800">
+                    ${esc(msg.channel || 'email')}
+                  </span>
+                  <span class="inline-block rounded-full px-2 py-1 text-xs ${resultClass}">
+                    ${esc(msg.result || 'sent')}
+                  </span>
+                </div>
+                
+                <div class="text-sm text-slate-600 mb-2">${esc(msg.note || "Message sent")}</div>
+                
+                <div class="flex flex-wrap gap-2 text-xs text-slate-500">
+                  ${msg.email_primary ? `<span class="bg-slate-100 px-2 py-1 rounded">${esc(msg.email_primary)}</span>` : ''}
+                  ${msg.phone_primary ? `<span class="bg-slate-100 px-2 py-1 rounded">${esc(msg.phone_primary)}</span>` : ''}
+                </div>
+              </div>
+              
+              <div class="text-right text-xs text-slate-500">
+                ${date}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderReceivedReplies() {
+      if (!receivedReplies.length) {
+        repliesListEl.innerHTML = `<div class="text-center py-8 text-slate-500">No replies received yet</div>`;
+        return;
+      }
+
+      repliesListEl.innerHTML = receivedReplies.map(reply => {
+        const date = formatDate(reply.created_at);
+        const resultClass = getResultClass(reply.result);
+        
+        return `
+          <div class="rounded-xl border bg-green-50 p-4 hover:bg-green-100 transition-colors">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="font-medium">${esc(reply.company_name || "Unknown Business")}</div>
+                  <span class="inline-block rounded-full px-2 py-1 text-xs bg-green-100 text-green-800">
+                    ${esc(reply.channel || 'email')} reply
+                  </span>
+                  <span class="inline-block rounded-full px-2 py-1 text-xs ${resultClass}">
+                    ${esc(reply.result || 'received')}
+                  </span>
+                </div>
+                
+                <div class="text-sm text-green-800 mb-2">${esc(reply.note || "No message content")}</div>
+                
+                <div class="flex flex-wrap gap-2 text-xs text-green-600">
+                  ${reply.email_primary ? `<span class="bg-green-100 px-2 py-1 rounded">${esc(reply.email_primary)}</span>` : ''}
+                  ${reply.phone_primary ? `<span class="bg-green-100 px-2 py-1 rounded">${esc(reply.phone_primary)}</span>` : ''}
+                  ${reply.category ? `<span class="bg-green-100 px-2 py-1 rounded">${esc(reply.category)}</span>` : ''}
+                </div>
+              </div>
+              
+              <div class="text-right text-xs text-green-600">
+                ${date}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function getResultClass(result) {
+      if (!result) return "bg-gray-100 text-gray-800";
+      
+      const lowerResult = result.toLowerCase();
+      if (['interested', 'replied', 'positive', 'yes', 'ok', 'thanks', 'sent'].includes(lowerResult)) {
+        return "bg-green-100 text-green-800";
+      } else if (['follow_up', 'later', 'maybe', 'not_now', 'considering', 'soon'].includes(lowerResult)) {
+        return "bg-yellow-100 text-yellow-800";
+      } else if (['no', 'not_interested', 'no_thanks', 'failed'].includes(lowerResult)) {
+        return "bg-red-100 text-red-800";
+      } else {
+        return "bg-blue-100 text-blue-800";
+      }
+    }
+
+    function updateSentPager(count, limit, currentOffset) {
+      const start = currentOffset + 1;
+      const end = Math.min(currentOffset + sentMessages.length, count);
+      
+      document.getElementById("sentPagerText").textContent = `Showing ${start}–${end} of ${count} sent messages`;
+      document.getElementById("prevSentBtn").disabled = currentOffset === 0;
+      document.getElementById("nextSentBtn").disabled = end >= count;
+    }
+
+    function updateRepliesPager(count, limit, currentOffset) {
+      const start = currentOffset + 1;
+      const end = Math.min(currentOffset + receivedReplies.length, count);
+      
+      document.getElementById("repliesPagerText").textContent = `Showing ${start}–${end} of ${count} received replies`;
+      document.getElementById("prevRepliesBtn").disabled = currentOffset === 0;
+      document.getElementById("nextRepliesBtn").disabled = end >= count;
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return "—";
+      const date = new Date(dateStr);
+      return date.toLocaleString();
+    }
+
+    function esc(s) {
+      return (s + "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // Add event listeners for pagination
+    document.getElementById("prevSentBtn").addEventListener("click", () => {
+      sentOffset = Math.max(0, sentOffset - pageSize);
+      loadSentMessages();
+    });
+
+    document.getElementById("nextSentBtn").addEventListener("click", () => {
+      sentOffset += pageSize;
+      loadSentMessages();
+    });
+
+    document.getElementById("prevRepliesBtn").addEventListener("click", () => {
+      repliesOffset = Math.max(0, repliesOffset - pageSize);
+      loadReceivedReplies();
+    });
+
+    document.getElementById("nextRepliesBtn").addEventListener("click", () => {
+      repliesOffset += pageSize;
+      loadReceivedReplies();
+    });
+
+    document.getElementById("refreshBtn").addEventListener("click", () => {
+      loadDashboardData();
+      if (document.getElementById("sentSection").classList.contains("hidden")) {
+        loadReceivedReplies();
+      } else {
+        loadSentMessages();
+      }
+    });
+  </script>
+</body>
+</html>
