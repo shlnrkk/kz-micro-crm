@@ -6,8 +6,6 @@ const json = (data, status = 200) =>
 
 const nowIso = () => new Date().toISOString();
 
-import { json } from "../_utils.js";
-
 export async function onRequestPost({ request, env }) {
   try {
     const body = await request.json().catch(() => ({}));

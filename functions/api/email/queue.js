@@ -10,8 +10,6 @@ function clampInt(v, def, min, max) {
   return Math.max(min, Math.min(max, n));
 }
 
-import { json, clampInt } from "../_utils.js";
-
 export async function onRequestGet({ request, env }) {
   try {
     const url = new URL(request.url);
