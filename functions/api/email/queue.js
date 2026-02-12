@@ -24,6 +24,7 @@ export async function onRequestGet({ request, env }) {
 
     // Query that ensures each business gets only one email maximum
     // This checks that the lead has never had an outbound email activity
+    // Using contact_value instead of separate email/phone columns in do_not_contact
     const sql = `
       SELECT l.*
       FROM leads l
@@ -38,8 +39,7 @@ export async function onRequestGet({ request, env }) {
         )
         AND NOT EXISTS (
           SELECT 1 FROM do_not_contact d
-          WHERE (d.email IS NOT NULL AND d.email = l.email_primary)
-             OR (d.phone IS NOT NULL AND d.phone = l.phone_primary)
+          WHERE d.contact_value = l.email_primary OR d.contact_value = l.phone_primary
         )
       ORDER BY l.priority ASC, l.lead_score DESC, l.updated_at DESC
       LIMIT ?
