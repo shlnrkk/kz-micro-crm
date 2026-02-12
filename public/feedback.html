@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -21,10 +22,10 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <a href="/public/import.html" class="rounded-lg border bg-white px-3 py-2 text-sm hover:bg-slate-50">
+          <a href="/import.html" class="rounded-lg border bg-white px-3 py-2 text-sm hover:bg-slate-50">
             Import CSV
           </a>
-          <a href="/public/" class="rounded-lg border bg-white px-3 py-2 text-sm hover:bg-slate-50">
+          <a href="/" class="rounded-lg border bg-white px-3 py-2 text-sm hover:bg-slate-50">
             Back to CRM
           </a>
           <button id="refreshBtn" class="rounded-lg bg-slate-900 px-3 py-2 text-sm text-white hover:bg-slate-800">
@@ -51,12 +52,14 @@
 
           <label class="block">
             <div class="text-xs text-slate-500 mb-1">Result</div>
-            <input id="result" class="w-full rounded-xl border px-3 py-2 text-sm" placeholder="reply / interested / not_now / no_answer" />
+            <input id="result" class="w-full rounded-xl border px-3 py-2 text-sm"
+              placeholder="reply / interested / not_now / no_answer" />
           </label>
 
           <label class="block">
             <div class="text-xs text-slate-500 mb-1">Limit</div>
-            <input id="limit" class="w-full rounded-xl border px-3 py-2 text-sm" type="number" value="20" min="1" max="100" />
+            <input id="limit" class="w-full rounded-xl border px-3 py-2 text-sm" type="number" value="20" min="1"
+              max="100" />
           </label>
         </div>
 
@@ -95,11 +98,13 @@
 
       <!-- Pagination -->
       <div id="pagination" class="mt-6 flex items-center justify-between">
-        <button id="prevBtn" class="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50" disabled>
+        <button id="prevBtn" class="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
+          disabled>
           Previous
         </button>
         <div id="pagerText" class="text-sm text-slate-600">-</div>
-        <button id="nextBtn" class="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50" disabled>
+        <button id="nextBtn" class="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
+          disabled>
           Next
         </button>
       </div>
@@ -124,7 +129,7 @@
     const prevBtnEl = document.getElementById("prevBtn");
     const nextBtnEl = document.getElementById("nextBtn");
     const pagerTextEl = document.getElementById("pagerText");
-    
+
     // Stats elements
     const totalRepliesEl = document.getElementById("totalReplies");
     const emailRepliesEl = document.getElementById("emailReplies");
@@ -186,10 +191,10 @@
     function updateStats(items) {
       const total = items.length;
       const emailCount = items.filter(item => item.channel === 'email').length;
-      const positiveCount = items.filter(item => 
+      const positiveCount = items.filter(item =>
         item.result && ['interested', 'replied', 'positive', 'yes', 'ok'].includes(item.result.toLowerCase())
       ).length;
-      const followupCount = items.filter(item => 
+      const followupCount = items.filter(item =>
         item.result && ['follow_up', 'later', 'maybe', 'not_now', 'considering'].includes(item.result.toLowerCase())
       ).length;
 
@@ -208,7 +213,7 @@
       feedbackListEl.innerHTML = feedback.map(fb => {
         const resultClass = getResultClass(fb.result);
         const date = formatDate(fb.created_at);
-        
+
         return `
           <div class="rounded-xl border bg-white p-4 hover:bg-slate-50 transition-colors">
             <div class="flex items-start justify-between">
@@ -243,7 +248,7 @@
 
     function getResultClass(result) {
       if (!result) return "bg-gray-100 text-gray-800";
-      
+
       const lowerResult = result.toLowerCase();
       if (['interested', 'replied', 'positive', 'yes', 'ok', 'good', 'thanks'].includes(lowerResult)) {
         return "bg-green-100 text-green-800";
@@ -259,7 +264,7 @@
     function updatePager(count, limit, currentOffset) {
       const start = currentOffset + 1;
       const end = Math.min(currentOffset + feedback.length, count);
-      
+
       pagerTextEl.textContent = `Showing ${start}–${end} of ${count} replies`;
       prevBtnEl.disabled = currentOffset === 0;
       nextBtnEl.disabled = end >= count;
@@ -276,4 +281,5 @@
     }
   </script>
 </body>
+
 </html>

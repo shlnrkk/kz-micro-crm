@@ -1,428 +1,624 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Campaign Dashboard - KZ Micro CRM</title>
+  <title>Campaign Dashboard — KZ Micro CRM</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    .tab-active {
+      border-color: #6366f1;
+      color: #4f46e5;
+    }
+
+    .tab-inactive {
+      border-color: transparent;
+      color: #64748b;
+    }
+
+    .tab-inactive:hover {
+      border-color: #cbd5e1;
+      color: #475569;
+    }
+
+    .card-glow {
+      box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.05), 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .msg-card {
+      transition: all 0.15s ease;
+    }
+
+    .msg-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .stat-card {
+      transition: all 0.2s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .pulse-dot {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: 200% 0;
+      }
+
+      100% {
+        background-position: -200% 0;
+      }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
 </head>
 
-<body class="bg-slate-50 text-slate-900">
-  <div class="min-h-screen">
-    <!-- Top bar -->
-    <header class="sticky top-0 z-10 border-b bg-white/80 backdrop-blur">
-      <div class="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between gap-3">
-        <div class="flex items-center gap-3">
-          <div class="h-9 w-9 rounded-xl bg-blue-600 text-white grid place-items-center font-semibold">CD</div>
-          <div>
-            <div class="font-semibold leading-5">Campaign Dashboard</div>
-            <div class="text-xs text-slate-500">Sent messages & received replies</div>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <a href="/public/import.html" class="rounded-lg border bg-white px-3 py-2 text-sm hover:bg-slate-50">
-            Import CSV
-          </a>
-          <a href="/public/feedback.html" class="rounded-lg border bg-white px-3 py-2 text-sm hover:bg-slate-50">
-            Feedback
-          </a>
-          <a href="/public/" class="rounded-lg border bg-white px-3 py-2 text-sm hover:bg-slate-50">
-            Back to CRM
-          </a>
-          <button id="refreshBtn" class="rounded-lg bg-slate-900 px-3 py-2 text-sm text-white hover:bg-slate-800">
-            Refresh
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <!-- Main -->
-    <main class="mx-auto max-w-7xl px-4 py-6">
-      <!-- Stats summary -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div class="rounded-xl border bg-white p-4 text-center">
-          <div class="text-2xl font-bold text-blue-600" id="totalSent">0</div>
-          <div class="text-sm text-slate-500">Messages Sent</div>
-        </div>
-        <div class="rounded-xl border bg-white p-4 text-center">
-          <div class="text-2xl font-bold text-green-600" id="totalReplies">0</div>
-          <div class="text-sm text-slate-500">Replies Received</div>
-        </div>
-        <div class="rounded-xl border bg-white p-4 text-center">
-          <div class="text-2xl font-bold text-purple-600" id="replyRate">0%</div>
-          <div class="text-sm text-slate-500">Reply Rate</div>
-        </div>
-        <div class="rounded-xl border bg-white p-4 text-center">
-          <div class="text-2xl font-bold text-orange-600" id="pending">0</div>
-          <div class="text-sm text-slate-500">Pending Replies</div>
-        </div>
-      </div>
-
-      <!-- Tabs -->
-      <div class="mb-6 border-b">
-        <nav class="-mb-px flex space-x-8">
-          <button id="sentTab" class="tab-btn border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 border-b-2 py-4 px-1 text-sm font-medium">
-            Sent Messages
-          </button>
-          <button id="repliesTab" class="tab-btn border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 border-b-2 py-4 px-1 text-sm font-medium">
-            Received Replies
-          </button>
-        </nav>
-      </div>
-
-      <!-- Content sections -->
-      <div id="sentSection" class="tab-content">
-        <div class="rounded-2xl border bg-white p-4 mb-6">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold">Sent Messages</h2>
-            <div class="flex gap-2">
-              <select id="sentChannelFilter" class="rounded-lg border px-3 py-2 text-sm">
-                <option value="">All Channels</option>
-                <option value="email">Email</option>
-                <option value="call">Call</option>
-                <option value="other">Other</option>
-              </select>
-              <input id="sentSearch" class="rounded-lg border px-3 py-2 text-sm" placeholder="Search..." />
-            </div>
-          </div>
-          
-          <div id="sentList" class="space-y-3">
-            <div class="text-center py-8 text-slate-500">Loading sent messages...</div>
-          </div>
-
-          <!-- Sent Pagination -->
-          <div id="sentPagination" class="mt-6 flex items-center justify-between">
-            <button id="prevSentBtn" class="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50" disabled>
-              Previous
-            </button>
-            <div id="sentPagerText" class="text-sm text-slate-600">-</div>
-            <button id="nextSentBtn" class="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50" disabled>
-              Next
-            </button>
+<body class="bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 text-slate-900 min-h-screen">
+  <!-- Top bar -->
+  <header class="sticky top-0 z-20 border-b border-slate-200/60 bg-white/70 backdrop-blur-xl">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div
+          class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white grid place-items-center font-bold text-sm shadow-lg shadow-indigo-200">
+          CD</div>
+        <div>
+          <div class="font-semibold leading-5 text-slate-900">Campaign Dashboard</div>
+          <div class="text-xs text-slate-500 flex items-center gap-1.5">
+            <span class="pulse-dot inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Live email tracking
           </div>
         </div>
       </div>
 
-      <div id="repliesSection" class="tab-content hidden">
-        <div class="rounded-2xl border bg-white p-4 mb-6">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold">Received Replies</h2>
-            <div class="flex gap-2">
-              <select id="repliesChannelFilter" class="rounded-lg border px-3 py-2 text-sm">
-                <option value="">All Channels</option>
-                <option value="email">Email</option>
-                <option value="call">Call</option>
-                <option value="other">Other</option>
-              </select>
-              <input id="repliesSearch" class="rounded-lg border px-3 py-2 text-sm" placeholder="Search..." />
-            </div>
-          </div>
-          
-          <div id="repliesList" class="space-y-3">
-            <div class="text-center py-8 text-slate-500">Loading received replies...</div>
-          </div>
+      <nav class="flex items-center gap-2">
+        <a href="/feedback.html"
+          class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50 transition-colors">
+          Feedback
+        </a>
+        <a href="/import.html"
+          class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50 transition-colors">
+          Import
+        </a>
+        <a href="/"
+          class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm hover:bg-slate-50 transition-colors">
+          ← CRM
+        </a>
+        <button id="refreshBtn"
+          class="rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 px-4 py-2 text-sm text-white font-medium hover:from-indigo-600 hover:to-purple-700 transition-all shadow-sm shadow-indigo-200">
+          ↻ Refresh
+        </button>
+      </nav>
+    </div>
+  </header>
 
-          <!-- Replies Pagination -->
-          <div id="repliesPagination" class="mt-6 flex items-center justify-between">
-            <button id="prevRepliesBtn" class="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50" disabled>
-              Previous
-            </button>
-            <div id="repliesPagerText" class="text-sm text-slate-600">-</div>
-            <button id="nextRepliesBtn" class="rounded-lg border bg-white px-4 py-2 text-sm hover:bg-slate-50 disabled:opacity-50" disabled>
-              Next
-            </button>
+  <!-- Main -->
+  <main class="mx-auto max-w-7xl px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="stat-card rounded-2xl border border-slate-200/60 bg-white p-5 card-glow">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 grid place-items-center text-lg">📤</div>
+          <div class="text-xs text-slate-500 font-medium uppercase tracking-wider">Sent</div>
+        </div>
+        <div class="text-3xl font-bold text-slate-900" id="totalSent">
+          <div class="skeleton rounded h-8 w-16"></div>
+        </div>
+      </div>
+
+      <div class="stat-card rounded-2xl border border-slate-200/60 bg-white p-5 card-glow">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 grid place-items-center text-lg">📥</div>
+          <div class="text-xs text-slate-500 font-medium uppercase tracking-wider">Replies</div>
+        </div>
+        <div class="text-3xl font-bold text-emerald-600" id="totalReplies">
+          <div class="skeleton rounded h-8 w-16"></div>
+        </div>
+      </div>
+
+      <div class="stat-card rounded-2xl border border-slate-200/60 bg-white p-5 card-glow">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 grid place-items-center text-lg">📊</div>
+          <div class="text-xs text-slate-500 font-medium uppercase tracking-wider">Reply Rate</div>
+        </div>
+        <div class="text-3xl font-bold text-purple-600" id="replyRate">
+          <div class="skeleton rounded h-8 w-16"></div>
+        </div>
+      </div>
+
+      <div class="stat-card rounded-2xl border border-slate-200/60 bg-white p-5 card-glow">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 grid place-items-center text-lg">⏳</div>
+          <div class="text-xs text-slate-500 font-medium uppercase tracking-wider">In Queue</div>
+        </div>
+        <div class="text-3xl font-bold text-amber-600" id="inQueue">
+          <div class="skeleton rounded h-8 w-16"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Daily stats chart (text-based) -->
+    <div class="rounded-2xl border border-slate-200/60 bg-white p-5 card-glow">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="font-semibold text-slate-900">Last 14 Days</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Daily email activity breakdown</p>
+        </div>
+        <div class="flex items-center gap-4 text-xs">
+          <span class="flex items-center gap-1.5"><span
+              class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>Sent</span>
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-400"></span>Failed</span>
+          <span class="flex items-center gap-1.5"><span
+              class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>Inbound</span>
+        </div>
+      </div>
+      <div id="dailyChart" class="space-y-2">
+        <div class="skeleton rounded h-40 w-full"></div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="border-b border-slate-200/60">
+      <nav class="-mb-px flex space-x-1">
+        <button id="sentTab"
+          class="tab-active border-b-2 py-3.5 px-4 text-sm font-medium transition-colors rounded-t-lg">
+          📤 Sent Messages
+        </button>
+        <button id="repliesTab"
+          class="tab-inactive border-b-2 py-3.5 px-4 text-sm font-medium transition-colors rounded-t-lg">
+          📥 Received Replies
+        </button>
+        <button id="inboundTab"
+          class="tab-inactive border-b-2 py-3.5 px-4 text-sm font-medium transition-colors rounded-t-lg">
+          📨 Inbound Messages
+        </button>
+      </nav>
+    </div>
+
+    <!-- Tab Content: Sent Messages -->
+    <div id="sentSection" class="tab-content">
+      <div class="rounded-2xl border border-slate-200/60 bg-white overflow-hidden card-glow">
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <h2 class="font-semibold text-slate-900">Sent Outbound Emails</h2>
+          <div class="flex gap-2">
+            <select id="sentResultFilter" class="rounded-lg border border-slate-200 px-3 py-1.5 text-sm bg-white">
+              <option value="">All Results</option>
+              <option value="sent">Sent ✓</option>
+              <option value="failed">Failed ✗</option>
+            </select>
+          </div>
+        </div>
+        <div id="sentList" class="divide-y divide-slate-100">
+          <div class="p-8 text-center">
+            <div class="skeleton rounded h-6 w-48 mx-auto mb-3"></div>
+            <div class="skeleton rounded h-4 w-32 mx-auto"></div>
+          </div>
+        </div>
+        <div class="px-5 py-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div id="sentPagerText" class="text-xs text-slate-500">—</div>
+          <div class="flex items-center gap-2">
+            <button id="prevSentBtn"
+              class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-40"
+              disabled>← Prev</button>
+            <button id="nextSentBtn"
+              class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-40"
+              disabled>Next →</button>
           </div>
         </div>
       </div>
-    </main>
-  </div>
+    </div>
+
+    <!-- Tab Content: Replies -->
+    <div id="repliesSection" class="tab-content hidden">
+      <div class="rounded-2xl border border-slate-200/60 bg-white overflow-hidden card-glow">
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <h2 class="font-semibold text-slate-900">Received Replies (Feedback)</h2>
+        </div>
+        <div id="repliesList" class="divide-y divide-slate-100">
+          <div class="p-8 text-center">
+            <div class="skeleton rounded h-6 w-48 mx-auto mb-3"></div>
+            <div class="skeleton rounded h-4 w-32 mx-auto"></div>
+          </div>
+        </div>
+        <div class="px-5 py-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div id="repliesPagerText" class="text-xs text-slate-500">—</div>
+          <div class="flex items-center gap-2">
+            <button id="prevRepliesBtn"
+              class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-40"
+              disabled>← Prev</button>
+            <button id="nextRepliesBtn"
+              class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-40"
+              disabled>Next →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Content: Inbound Messages (from IMAP sync) -->
+    <div id="inboundSection" class="tab-content hidden">
+      <div class="rounded-2xl border border-slate-200/60 bg-white overflow-hidden card-glow">
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <h2 class="font-semibold text-slate-900">Inbound Email Messages</h2>
+          <div class="text-xs text-slate-500">Synced via IMAP</div>
+        </div>
+        <div id="inboundList" class="divide-y divide-slate-100">
+          <div class="p-8 text-center">
+            <div class="skeleton rounded h-6 w-48 mx-auto mb-3"></div>
+            <div class="skeleton rounded h-4 w-32 mx-auto"></div>
+          </div>
+        </div>
+        <div class="px-5 py-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div id="inboundPagerText" class="text-xs text-slate-500">—</div>
+          <div class="flex items-center gap-2">
+            <button id="prevInboundBtn"
+              class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-40"
+              disabled>← Prev</button>
+            <button id="nextInboundBtn"
+              class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-40"
+              disabled>Next →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
 
   <script>
-    // State
-    let sentMessages = [];
-    let receivedReplies = [];
-    let sentOffset = 0;
-    let repliesOffset = 0;
-    const pageSize = 20;
+    /* ── state ── */
+    let sentOffset = 0, repliesOffset = 0, inboundOffset = 0;
+    const PAGE = 20;
+    let sentCount = 0, repliesCount = 0;
+    let activeTab = "sent";
 
-    // DOM elements
-    const sentListEl = document.getElementById("sentList");
-    const repliesListEl = document.getElementById("repliesList");
-    const sentSection = document.getElementById("sentSection");
-    const repliesSection = document.getElementById("repliesSection");
-    
-    // Stats elements
-    const totalSentEl = document.getElementById("totalSent");
-    const totalRepliesEl = document.getElementById("totalReplies");
-    const replyRateEl = document.getElementById("replyRate");
-    const pendingEl = document.getElementById("pending");
+    /* ── DOM ── */
+    const $ = (id) => document.getElementById(id);
 
-    // Tab buttons
-    const sentTabBtn = document.getElementById("sentTab");
-    const repliesTabBtn = document.getElementById("repliesTab");
-
-    // Initialize
+    /* ── init ── */
     document.addEventListener("DOMContentLoaded", () => {
-      // Set up tab switching
-      sentTabBtn.addEventListener("click", () => switchTab("sent"));
-      repliesTabBtn.addEventListener("click", () => switchTab("replies"));
-      
-      // Set sent tab as active by default
-      setActiveTab("sent");
-      
-      // Load initial data
-      loadDashboardData();
+      loadStats();
+      loadSentMessages();
+
+      $("sentTab").onclick = () => switchTab("sent");
+      $("repliesTab").onclick = () => switchTab("replies");
+      $("inboundTab").onclick = () => switchTab("inbound");
+      $("refreshBtn").onclick = () => { loadStats(); reloadActiveTab(); };
+
+      $("prevSentBtn").onclick = () => { sentOffset = Math.max(0, sentOffset - PAGE); loadSentMessages(); };
+      $("nextSentBtn").onclick = () => { sentOffset += PAGE; loadSentMessages(); };
+      $("prevRepliesBtn").onclick = () => { repliesOffset = Math.max(0, repliesOffset - PAGE); loadReplies(); };
+      $("nextRepliesBtn").onclick = () => { repliesOffset += PAGE; loadReplies(); };
+      $("prevInboundBtn").onclick = () => { inboundOffset = Math.max(0, inboundOffset - PAGE); loadInbound(); };
+      $("nextInboundBtn").onclick = () => { inboundOffset += PAGE; loadInbound(); };
+      $("sentResultFilter").onchange = () => { sentOffset = 0; loadSentMessages(); };
     });
 
-    function switchTab(tabName) {
-      setActiveTab(tabName);
-      if (tabName === "sent") {
-        loadSentMessages();
-      } else {
-        loadReceivedReplies();
-      }
+    function switchTab(tab) {
+      activeTab = tab;
+      const tabs = { sent: "sentTab", replies: "repliesTab", inbound: "inboundTab" };
+      const sections = { sent: "sentSection", replies: "repliesSection", inbound: "inboundSection" };
+      Object.entries(tabs).forEach(([k, id]) => {
+        $(id).className = k === tab
+          ? "tab-active border-b-2 py-3.5 px-4 text-sm font-medium transition-colors rounded-t-lg"
+          : "tab-inactive border-b-2 py-3.5 px-4 text-sm font-medium transition-colors rounded-t-lg";
+      });
+      Object.entries(sections).forEach(([k, id]) => {
+        $(id).classList.toggle("hidden", k !== tab);
+      });
+      reloadActiveTab();
     }
 
-    function setActiveTab(tabName) {
-      // Update button styles
-      sentTabBtn.className = tabName === "sent" 
-        ? "tab-btn border-blue-500 text-blue-600 border-b-2 py-4 px-1 text-sm font-medium" 
-        : "tab-btn border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 border-b-2 py-4 px-1 text-sm font-medium";
-      
-      repliesTabBtn.className = tabName === "replies" 
-        ? "tab-btn border-blue-500 text-blue-600 border-b-2 py-4 px-1 text-sm font-medium" 
-        : "tab-btn border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 border-b-2 py-4 px-1 text-sm font-medium";
-      
-      // Show/hide content
-      sentSection.classList.toggle("hidden", tabName !== "sent");
-      repliesSection.classList.toggle("hidden", tabName !== "replies");
+    function reloadActiveTab() {
+      if (activeTab === "sent") loadSentMessages();
+      else if (activeTab === "replies") loadReplies();
+      else loadInbound();
     }
 
-    async function loadDashboardData() {
+    /* ── Stats ── */
+    async function loadStats() {
       try {
-        // Load sent messages count
-        const sentResp = await fetch('/api/leads?q=&limit=1');
-        const sentData = await sentResp.json();
-        
-        // For outbound messages, we'll need to check activities
-        const activitiesResp = await fetch('/api/activities?channel=email&direction=outbound&limit=1');
-        const activitiesData = await activitiesResp.json();
-        const totalSent = activitiesData.count || 0;
-        
-        // Load received replies count
-        const feedbackResp = await fetch('/api/feedback?channel=email&limit=1');
-        const feedbackData = await feedbackResp.json();
-        const totalReplies = feedbackData.count || 0;
-        
-        // Update stats
-        totalSentEl.textContent = totalSent;
-        totalRepliesEl.textContent = totalReplies;
-        const rate = totalSent > 0 ? Math.round((totalReplies / totalSent) * 100) : 0;
-        replyRateEl.textContent = `${rate}%`;
-        pendingEl.textContent = Math.max(0, totalSent - totalReplies);
-        
+        const [statsRes, queueRes] = await Promise.all([
+          fetch("/api/stats"),
+          fetch("/api/email/queue?limit=200")
+        ]);
+        const stats = await statsRes.json();
+        const queue = await queueRes.json();
+
+        const sent = stats.totals?.sent || 0;
+        const inbound = stats.totals?.inbound || 0;
+        const failed = stats.totals?.failed || 0;
+        const queueCount = (queue.items || []).length;
+        const rate = sent > 0 ? Math.round((inbound / sent) * 100) : 0;
+
+        $("totalSent").textContent = sent;
+        $("totalReplies").textContent = inbound;
+        $("replyRate").textContent = rate + "%";
+        $("inQueue").textContent = queueCount;
+
+        renderDailyChart(stats.daily || []);
       } catch (e) {
-        console.error("Error loading dashboard data:", e);
+        console.error("Stats error:", e);
       }
     }
 
-    async function loadSentMessages() {
-      try {
-        const params = new URLSearchParams({
-          channel: 'email',
-          direction: 'outbound',
-          limit: pageSize,
-          offset: sentOffset
-        });
+    function renderDailyChart(daily) {
+      const container = $("dailyChart");
+      if (!daily.length) {
+        container.innerHTML = `<div class="text-center text-sm text-slate-400 py-8">No daily data yet</div>`;
+        return;
+      }
 
+      const maxVal = Math.max(1, ...daily.map(d => Math.max(d.sent || 0, d.failed || 0, d.inbound || 0)));
+
+      container.innerHTML = daily.map(d => {
+        const sentW = Math.max(2, ((d.sent || 0) / maxVal) * 100);
+        const failedW = Math.max(0, ((d.failed || 0) / maxVal) * 100);
+        const inboundW = Math.max(0, ((d.inbound || 0) / maxVal) * 100);
+        const dayLabel = d.day ? d.day.slice(5) : "—"; // "MM-DD"
+
+        return `
+          <div class="flex items-center gap-3 text-xs fade-in">
+            <div class="w-12 text-slate-500 font-mono text-right shrink-0">${esc(dayLabel)}</div>
+            <div class="flex-1 flex flex-col gap-0.5">
+              <div class="flex items-center gap-1">
+                <div class="h-4 rounded-r bg-indigo-500 transition-all" style="width:${sentW}%"></div>
+                <span class="text-slate-600 font-medium">${d.sent || 0}</span>
+              </div>
+              ${(d.failed || 0) > 0 ? `
+              <div class="flex items-center gap-1">
+                <div class="h-3 rounded-r bg-red-400 transition-all" style="width:${failedW}%"></div>
+                <span class="text-red-500">${d.failed}</span>
+              </div>` : ''}
+              ${(d.inbound || 0) > 0 ? `
+              <div class="flex items-center gap-1">
+                <div class="h-3 rounded-r bg-emerald-500 transition-all" style="width:${inboundW}%"></div>
+                <span class="text-emerald-600">${d.inbound}</span>
+              </div>` : ''}
+            </div>
+          </div>`;
+      }).join("");
+    }
+
+    /* ── Sent Messages ── */
+    async function loadSentMessages() {
+      const resultFilter = $("sentResultFilter").value;
+      const params = new URLSearchParams({
+        channel: "email",
+        direction: "outbound",
+        limit: PAGE,
+        offset: sentOffset
+      });
+      if (resultFilter) params.set("result", resultFilter);
+
+      try {
         const resp = await fetch(`/api/activities?${params}`);
         const data = await resp.json();
-
-        sentMessages = data.items || [];
-        renderSentMessages();
-        updateSentPager(data.count, data.limit, data.offset);
+        sentCount = data.count || 0;
+        renderSentList(data.items || []);
+        updatePager("sent", sentCount, sentOffset, (data.items || []).length);
       } catch (e) {
-        console.error("Failed to load sent messages:", e);
-        sentListEl.innerHTML = `<div class="text-center py-8 text-red-500">Error loading sent messages: ${e.message}</div>`;
+        $("sentList").innerHTML = errMsg(e.message);
       }
     }
 
-    async function loadReceivedReplies() {
+    function renderSentList(items) {
+      const el = $("sentList");
+      if (!items.length) {
+        el.innerHTML = `<div class="p-10 text-center text-slate-400 text-sm">No sent messages yet</div>`;
+        return;
+      }
+      el.innerHTML = items.map(msg => {
+        const date = fmtDate(msg.created_at);
+        const ok = (msg.result || "").toLowerCase() === "sent";
+        const badge = ok
+          ? `<span class="rounded-full px-2 py-0.5 text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">✓ Sent</span>`
+          : `<span class="rounded-full px-2 py-0.5 text-[11px] font-medium bg-red-50 text-red-700 border border-red-200">✗ Failed</span>`;
+
+        return `
+          <div class="msg-card px-5 py-4 fade-in">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+                  <span class="font-semibold text-sm text-slate-900 truncate">${esc(msg.company_name || "Unknown")}</span>
+                  ${badge}
+                  ${msg.category ? `<span class="rounded-full px-2 py-0.5 text-[11px] bg-slate-100 text-slate-600">${esc(msg.category)}</span>` : ''}
+                </div>
+                <div class="text-sm text-slate-600 leading-relaxed mb-2">${esc(msg.note || "—")}</div>
+                <div class="flex flex-wrap gap-1.5 text-[11px]">
+                  ${msg.email_primary ? `<span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">✉ ${esc(msg.email_primary)}</span>` : ''}
+                  ${msg.phone_primary ? `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">☎ ${esc(msg.phone_primary)}</span>` : ''}
+                </div>
+              </div>
+              <div class="text-[11px] text-slate-400 whitespace-nowrap shrink-0">${date}</div>
+            </div>
+          </div>`;
+      }).join("");
+    }
+
+    /* ── Replies (Feedback) ── */
+    async function loadReplies() {
       try {
-        const params = new URLSearchParams({
-          channel: 'email',
-          limit: pageSize,
-          offset: repliesOffset
-        });
-
-        const resp = await fetch(`/api/feedback?${params}`);
+        const resp = await fetch(`/api/feedback?channel=email&limit=${PAGE}&offset=${repliesOffset}`);
         const data = await resp.json();
-
-        receivedReplies = data.items || [];
-        renderReceivedReplies();
-        updateRepliesPager(data.count, data.limit, data.offset);
+        repliesCount = data.count || 0;
+        renderRepliesList(data.items || []);
+        updatePager("replies", repliesCount, repliesOffset, (data.items || []).length);
       } catch (e) {
-        console.error("Failed to load received replies:", e);
-        repliesListEl.innerHTML = `<div class="text-center py-8 text-red-500">Error loading received replies: ${e.message}</div>`;
+        $("repliesList").innerHTML = errMsg(e.message);
       }
     }
 
-    function renderSentMessages() {
-      if (!sentMessages.length) {
-        sentListEl.innerHTML = `<div class="text-center py-8 text-slate-500">No sent messages yet</div>`;
+    function renderRepliesList(items) {
+      const el = $("repliesList");
+      if (!items.length) {
+        el.innerHTML = `<div class="p-10 text-center text-slate-400 text-sm">No replies received yet. Run the IMAP sync to pull in inbound emails.</div>`;
         return;
       }
-
-      sentListEl.innerHTML = sentMessages.map(msg => {
-        const date = formatDate(msg.created_at);
-        const resultClass = getResultClass(msg.result);
-        
+      el.innerHTML = items.map(r => {
+        const date = fmtDate(r.created_at);
+        const rClass = resultBadge(r.result);
         return `
-          <div class="rounded-xl border bg-white p-4 hover:bg-slate-50 transition-colors">
-            <div class="flex items-start justify-between">
-              <div class="flex-1">
-                <div class="flex items-center gap-2 mb-2">
-                  <div class="font-medium">${esc(msg.lead?.company_name || msg.company_name || "Unknown Business")}</div>
-                  <span class="inline-block rounded-full px-2 py-1 text-xs bg-blue-100 text-blue-800">
-                    ${esc(msg.channel || 'email')}
-                  </span>
-                  <span class="inline-block rounded-full px-2 py-1 text-xs ${resultClass}">
-                    ${esc(msg.result || 'sent')}
-                  </span>
+          <div class="msg-card px-5 py-4 fade-in bg-gradient-to-r from-emerald-50/40 to-transparent">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+                  <span class="font-semibold text-sm text-slate-900 truncate">${esc(r.company_name || "Unknown")}</span>
+                  ${rClass}
                 </div>
-                
-                <div class="text-sm text-slate-600 mb-2">${esc(msg.note || "Message sent")}</div>
-                
-                <div class="flex flex-wrap gap-2 text-xs text-slate-500">
-                  ${msg.email_primary ? `<span class="bg-slate-100 px-2 py-1 rounded">${esc(msg.email_primary)}</span>` : ''}
-                  ${msg.phone_primary ? `<span class="bg-slate-100 px-2 py-1 rounded">${esc(msg.phone_primary)}</span>` : ''}
+                <div class="text-sm text-slate-700 leading-relaxed mb-2">${esc(r.note || "No content")}</div>
+                <div class="flex flex-wrap gap-1.5 text-[11px]">
+                  ${r.email_primary ? `<span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">✉ ${esc(r.email_primary)}</span>` : ''}
+                  ${r.phone_primary ? `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">☎ ${esc(r.phone_primary)}</span>` : ''}
+                  ${r.category ? `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${esc(r.category)}</span>` : ''}
                 </div>
               </div>
-              
-              <div class="text-right text-xs text-slate-500">
-                ${date}
-              </div>
+              <div class="text-[11px] text-slate-400 whitespace-nowrap shrink-0">${date}</div>
             </div>
-          </div>
-        `;
+          </div>`;
       }).join("");
     }
 
-    function renderReceivedReplies() {
-      if (!receivedReplies.length) {
-        repliesListEl.innerHTML = `<div class="text-center py-8 text-slate-500">No replies received yet</div>`;
+    /* ── Inbound Messages ── */
+    async function loadInbound() {
+      try {
+        const resp = await fetch(`/api/inbound?limit=${PAGE}&offset=${inboundOffset}`);
+        const data = await resp.json();
+        renderInboundList(data.items || []);
+        updatePager("inbound", -1, inboundOffset, (data.items || []).length);
+      } catch (e) {
+        $("inboundList").innerHTML = errMsg(e.message);
+      }
+    }
+
+    function renderInboundList(items) {
+      const el = $("inboundList");
+      if (!items.length) {
+        el.innerHTML = `
+          <div class="p-10 text-center text-sm">
+            <div class="text-slate-400 mb-2">No inbound messages yet</div>
+            <div class="text-xs text-slate-400">Run <code class="bg-slate-100 rounded px-1.5 py-0.5">node imap-sync.js</code> in the mailer folder to sync Gmail inbox</div>
+          </div>`;
         return;
       }
-
-      repliesListEl.innerHTML = receivedReplies.map(reply => {
-        const date = formatDate(reply.created_at);
-        const resultClass = getResultClass(reply.result);
-        
+      el.innerHTML = items.map(m => {
+        const date = fmtDate(m.received_at || m.created_at);
+        const matched = m.lead_id
+          ? `<span class="rounded-full px-2 py-0.5 text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-200">✓ Matched lead</span>`
+          : `<span class="rounded-full px-2 py-0.5 text-[11px] bg-amber-50 text-amber-700 border border-amber-200">? Unmatched</span>`;
         return `
-          <div class="rounded-xl border bg-green-50 p-4 hover:bg-green-100 transition-colors">
-            <div class="flex items-start justify-between">
-              <div class="flex-1">
-                <div class="flex items-center gap-2 mb-2">
-                  <div class="font-medium">${esc(reply.company_name || "Unknown Business")}</div>
-                  <span class="inline-block rounded-full px-2 py-1 text-xs bg-green-100 text-green-800">
-                    ${esc(reply.channel || 'email')} reply
-                  </span>
-                  <span class="inline-block rounded-full px-2 py-1 text-xs ${resultClass}">
-                    ${esc(reply.result || 'received')}
-                  </span>
+          <div class="msg-card px-5 py-4 fade-in">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+                  <span class="font-semibold text-sm text-slate-900 truncate">${esc(m.company_name || m.from_email || "Unknown")}</span>
+                  ${matched}
                 </div>
-                
-                <div class="text-sm text-green-800 mb-2">${esc(reply.note || "No message content")}</div>
-                
-                <div class="flex flex-wrap gap-2 text-xs text-green-600">
-                  ${reply.email_primary ? `<span class="bg-green-100 px-2 py-1 rounded">${esc(reply.email_primary)}</span>` : ''}
-                  ${reply.phone_primary ? `<span class="bg-green-100 px-2 py-1 rounded">${esc(reply.phone_primary)}</span>` : ''}
-                  ${reply.category ? `<span class="bg-green-100 px-2 py-1 rounded">${esc(reply.category)}</span>` : ''}
+                <div class="text-xs font-medium text-slate-700 mb-1">${esc(m.subject || "No subject")}</div>
+                <div class="text-sm text-slate-600 leading-relaxed mb-2">${esc(m.snippet || "")}</div>
+                <div class="flex flex-wrap gap-1.5 text-[11px]">
+                  <span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">✉ ${esc(m.from_email)}</span>
+                  ${m.city ? `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${esc(m.city)}</span>` : ''}
+                  ${m.category ? `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${esc(m.category)}</span>` : ''}
                 </div>
               </div>
-              
-              <div class="text-right text-xs text-green-600">
-                ${date}
-              </div>
+              <div class="text-[11px] text-slate-400 whitespace-nowrap shrink-0">${date}</div>
             </div>
-          </div>
-        `;
+          </div>`;
       }).join("");
     }
 
-    function getResultClass(result) {
-      if (!result) return "bg-gray-100 text-gray-800";
-      
-      const lowerResult = result.toLowerCase();
-      if (['interested', 'replied', 'positive', 'yes', 'ok', 'thanks', 'sent'].includes(lowerResult)) {
-        return "bg-green-100 text-green-800";
-      } else if (['follow_up', 'later', 'maybe', 'not_now', 'considering', 'soon'].includes(lowerResult)) {
-        return "bg-yellow-100 text-yellow-800";
-      } else if (['no', 'not_interested', 'no_thanks', 'failed'].includes(lowerResult)) {
-        return "bg-red-100 text-red-800";
-      } else {
-        return "bg-blue-100 text-blue-800";
-      }
+    /* ── Helpers ── */
+    function updatePager(prefix, count, offset, loaded) {
+      const start = offset + 1;
+      const end = offset + loaded;
+      const text = count >= 0
+        ? `Showing ${start}–${end} of ${count}`
+        : `Showing ${start}–${end}`;
+      $(prefix + "PagerText").textContent = loaded > 0 ? text : "No results";
+      $("prev" + cap(prefix) + "Btn").disabled = offset === 0;
+      $("next" + cap(prefix) + "Btn").disabled = loaded < PAGE;
     }
 
-    function updateSentPager(count, limit, currentOffset) {
-      const start = currentOffset + 1;
-      const end = Math.min(currentOffset + sentMessages.length, count);
-      
-      document.getElementById("sentPagerText").textContent = `Showing ${start}–${end} of ${count} sent messages`;
-      document.getElementById("prevSentBtn").disabled = currentOffset === 0;
-      document.getElementById("nextSentBtn").disabled = end >= count;
+    function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+    function resultBadge(result) {
+      const r = (result || "").toLowerCase();
+      if (["interested", "replied", "positive", "yes", "ok", "thanks", "received"].includes(r))
+        return `<span class="rounded-full px-2 py-0.5 text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">${esc(result)}</span>`;
+      if (["follow_up", "later", "maybe", "not_now", "considering"].includes(r))
+        return `<span class="rounded-full px-2 py-0.5 text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200">${esc(result)}</span>`;
+      if (["no", "not_interested", "no_thanks", "failed"].includes(r))
+        return `<span class="rounded-full px-2 py-0.5 text-[11px] font-medium bg-red-50 text-red-700 border border-red-200">${esc(result)}</span>`;
+      return result ? `<span class="rounded-full px-2 py-0.5 text-[11px] font-medium bg-slate-100 text-slate-600">${esc(result)}</span>` : '';
     }
 
-    function updateRepliesPager(count, limit, currentOffset) {
-      const start = currentOffset + 1;
-      const end = Math.min(currentOffset + receivedReplies.length, count);
-      
-      document.getElementById("repliesPagerText").textContent = `Showing ${start}–${end} of ${count} received replies`;
-      document.getElementById("prevRepliesBtn").disabled = currentOffset === 0;
-      document.getElementById("nextRepliesBtn").disabled = end >= count;
+    function fmtDate(d) {
+      if (!d) return "—";
+      const dt = new Date(d);
+      const now = new Date();
+      const diff = now - dt;
+      if (diff < 60000) return "just now";
+      if (diff < 3600000) return Math.floor(diff / 60000) + "m ago";
+      if (diff < 86400000) return Math.floor(diff / 3600000) + "h ago";
+      return dt.toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) + " " + dt.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
     }
 
-    function formatDate(dateStr) {
-      if (!dateStr) return "—";
-      const date = new Date(dateStr);
-      return date.toLocaleString();
-    }
-
-    function esc(s) {
-      return (s + "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    }
-
-    // Add event listeners for pagination
-    document.getElementById("prevSentBtn").addEventListener("click", () => {
-      sentOffset = Math.max(0, sentOffset - pageSize);
-      loadSentMessages();
-    });
-
-    document.getElementById("nextSentBtn").addEventListener("click", () => {
-      sentOffset += pageSize;
-      loadSentMessages();
-    });
-
-    document.getElementById("prevRepliesBtn").addEventListener("click", () => {
-      repliesOffset = Math.max(0, repliesOffset - pageSize);
-      loadReceivedReplies();
-    });
-
-    document.getElementById("nextRepliesBtn").addEventListener("click", () => {
-      repliesOffset += pageSize;
-      loadReceivedReplies();
-    });
-
-    document.getElementById("refreshBtn").addEventListener("click", () => {
-      loadDashboardData();
-      if (document.getElementById("sentSection").classList.contains("hidden")) {
-        loadReceivedReplies();
-      } else {
-        loadSentMessages();
-      }
-    });
+    function esc(s) { return (s + "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+    function errMsg(msg) { return `<div class="p-8 text-center text-red-500 text-sm">Error: ${esc(msg)}</div>`; }
   </script>
 </body>
+
 </html>
